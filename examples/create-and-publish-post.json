@@ -1,0 +1,64 @@
+{
+  "name": "FoPost — create and publish a post",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "5f1c0f3a-0000-4000-8000-000000000001",
+      "name": "When clicking Execute",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [-260, 0]
+    },
+    {
+      "parameters": {
+        "resource": "post",
+        "operation": "create",
+        "workspaceId": "REPLACE_WITH_WORKSPACE_ID",
+        "accounts": ["REPLACE_WITH_ACCOUNT_ID"],
+        "text": "Shipping the n8n node for FoPost today.",
+        "additionalFields": {
+          "status": "draft"
+        }
+      },
+      "id": "5f1c0f3a-0000-4000-8000-000000000002",
+      "name": "Create Post",
+      "type": "n8n-nodes-fopost.foPost",
+      "typeVersion": 1,
+      "position": [-40, 0],
+      "credentials": {
+        "foPostApi": {
+          "id": "1",
+          "name": "FoPost account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "post",
+        "operation": "publish",
+        "postId": "={{ $json.id }}"
+      },
+      "id": "5f1c0f3a-0000-4000-8000-000000000003",
+      "name": "Publish Post",
+      "type": "n8n-nodes-fopost.foPost",
+      "typeVersion": 1,
+      "position": [180, 0],
+      "credentials": {
+        "foPostApi": {
+          "id": "1",
+          "name": "FoPost account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "When clicking Execute": {
+      "main": [[{ "node": "Create Post", "type": "main", "index": 0 }]]
+    },
+    "Create Post": {
+      "main": [[{ "node": "Publish Post", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {},
+  "pinData": {}
+}
