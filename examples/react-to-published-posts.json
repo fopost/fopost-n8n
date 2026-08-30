@@ -1,0 +1,48 @@
+{
+  "name": "FoPost — react to published posts",
+  "nodes": [
+    {
+      "parameters": {
+        "workspaceId": "REPLACE_WITH_WORKSPACE_ID",
+        "events": ["post.published", "post.failed"]
+      },
+      "id": "6a2d1e4b-0000-4000-8000-000000000001",
+      "name": "FoPost Trigger",
+      "type": "n8n-nodes-fopost.foPostTrigger",
+      "typeVersion": 1,
+      "position": [-260, 0],
+      "webhookId": "6a2d1e4b-0000-4000-8000-0000000000ff",
+      "credentials": {
+        "foPostApi": {
+          "id": "1",
+          "name": "FoPost account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "post",
+        "operation": "getDeliveries",
+        "postId": "={{ $json.data.id }}"
+      },
+      "id": "6a2d1e4b-0000-4000-8000-000000000002",
+      "name": "Get Deliveries",
+      "type": "n8n-nodes-fopost.foPost",
+      "typeVersion": 1,
+      "position": [-40, 0],
+      "credentials": {
+        "foPostApi": {
+          "id": "1",
+          "name": "FoPost account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "FoPost Trigger": {
+      "main": [[{ "node": "Get Deliveries", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {},
+  "pinData": {}
+}
