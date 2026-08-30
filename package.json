@@ -26,7 +26,7 @@
     "analytics"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "build": "rimraf dist && tsc && gulp build:icons",

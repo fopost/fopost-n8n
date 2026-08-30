@@ -81,6 +81,13 @@ Descriptions carry no logic. Adding an operation is a new entry in the resource'
 - `checkExists` deletes an orphaned webhook whose secret we no longer hold, so `create` mints a
   fresh pair. Without the secret nothing can be verified, so keeping the orphan would be worse.
 
+## Node Version
+
+**Node 22+ only.** `n8n-workflow` pulls `@n8n/expression-runtime` -> `isolated-vm`, a native
+addon whose `engines` demand `>=22.0.0`. On Node 20 it does not merely warn — `node-gyp`
+fails to compile it against the V8 headers (`SourceLocation` in namespace `v8` does not name
+a type) and `npm install` exits non-zero. Do not lower the CI matrix or `engines` back to 20.
+
 ## Commands
 
 ```bash
