@@ -1,0 +1,73 @@
+name: Release
+
+# Tag the commit as v<version> matching package.json, e.g. v0.1.0.
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm provenance
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - run: npm install
+
+      - name: Verify tag matches package version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          VERSION=$(node -p "require('./package.json').version")
+          [ "$VERSION" = "$TAG" ] || { echo "::error::package.json is $VERSION but tag is $TAG"; exit 1; }
+
+      - run: npm run lint
+      - run: npm run build
+      - run: npm test
+
+      # n8n loads the package through the `n8n` block; a wrong path ships a package
+      # that installs cleanly and then registers no nodes at all.
+      - name: Verify the n8n manifest points at built files
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = require('./package.json');
+            const entries = [...pkg.n8n.credentials, ...pkg.n8n.nodes];
+            for (const entry of entries) {
+              if (!fs.existsSync(entry)) throw new Error('missing build output: ' + entry);
+            }
+            for (const dir of ['dist/nodes/FoPost', 'dist/nodes/FoPostTrigger']) {
+              if (!fs.existsSync(dir + '/fopost.svg')) throw new Error('missing icon in ' + dir);
+            }
+            console.log('n8n manifest ok');
+          "
+
+      - name: Publish
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "::error::NPM_TOKEN secret is not set"
+            exit 1
+          fi
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "n8n-nodes-fopost@$VERSION" version >/dev/null 2>&1; then
+            echo "n8n-nodes-fopost@$VERSION already published, skipping"
+          else
+            npm publish --access public --provenance
+          fi
