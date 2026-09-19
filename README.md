@@ -70,7 +70,8 @@ Notes worth knowing:
 - **Preflight** checks a post against every target platform's rules without sending anything,
   and **Publish → Dry Run** validates delivery the same way.
 - **Media Upload** reads an incoming binary field and stores the file in the workspace media
-  library, returning a URL you can attach to a post.
+  library (up to 50 MB), returning a URL you can attach to a post. The bytes go straight to
+  storage over a short-lived signed URL, never through the API.
 - **Return All** pages through the API for you; leave it off and set a **Limit** instead.
 - **Continue On Fail** is honoured: a failing item is emitted as `{ "error": "..." }` rather
   than stopping the run.

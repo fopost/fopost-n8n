@@ -29,8 +29,10 @@ have to be read out of the credential store by hand, and requests would not appe
 logs. n8n's verified-community-node review also expects a node to carry no runtime
 dependencies it does not need.
 
-The same rule is why `buildMultipartBody()` in `nodes/FoPost/GenericFunctions.ts` assembles the
-media-upload body by hand instead of pulling in `form-data`.
+The same rule is why Media → Upload uses the API's direct-upload flow (`POST /media/presign`,
+`PUT` the bytes to the signed URL through `this.helpers.httpRequest`, then
+`POST /media/presign/{uploadId}/complete`) instead of pulling in `form-data` for a multipart
+body. The `PUT` carries only the headers the presign answer returned and no API key.
 
 If a future task says "reuse the SDK", the answer is no — port the endpoint shape instead.
 
@@ -40,7 +42,7 @@ If a future task says "reuse the SDK", the answer is no — port the endpoint sh
 credentials/FoPostApi.credentials.ts   API key field, generic X-API-Key auth, credential test
 nodes/FoPost/
   FoPost.node.ts                       programmatic node: resource/operation router, loadOptions
-  GenericFunctions.ts                  request helpers, pagination, multipart, option mapping
+  GenericFunctions.ts                  request helpers, pagination, option mapping
   descriptions/*.ts                    one file per resource, INodeProperties only
   fopost.svg / fopost.dark.svg         node icon (the real FoPost brand mark)
 nodes/FoPostTrigger/
