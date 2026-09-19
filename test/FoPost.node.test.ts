@@ -157,6 +157,91 @@ describe('post:getAll', () => {
 	});
 });
 
+describe('media:upload', () => {
+	it('presigns, PUTs the bytes without the API key, then completes', async () => {
+		const storageUrl = 'https://storage.fopost.test';
+		let presignBody: Record<string, unknown> = {};
+		let putHeaders: Record<string, unknown> = {};
+		let putBody = '';
+		let completeKey: string | undefined;
+
+		nock(TEST_BASE_URL)
+			.post('/v1/media/presign', (received) => {
+				presignBody = received as Record<string, unknown>;
+				return true;
+			})
+			.reply(200, {
+				data: {
+					uploadId: 'up-1',
+					uploadUrl: `${storageUrl}/staging/up-1?sig=abc`,
+					method: 'PUT',
+					headers: { 'Content-Type': 'image/png' },
+					expiresAt: '2026-09-19T12:00:00.000Z',
+				},
+			});
+
+		nock(storageUrl)
+			.put('/staging/up-1?sig=abc', (received) => {
+				putBody = String(received);
+				return true;
+			})
+			.reply(function () {
+				putHeaders = this.req.headers;
+				return [200, ''];
+			});
+
+		nock(TEST_BASE_URL)
+			.post('/v1/media/presign/up-1/complete')
+			.reply(function () {
+				completeKey = this.req.headers['x-api-key'] as string;
+				return [
+					201,
+					{
+						data: {
+							id: 'media-1',
+							type: 'image',
+							name: 'photo.png',
+							url: 'https://cdn.test/photo.png',
+							previewUrl: 'https://cdn.test/preview/photo.png',
+							size: 12,
+						},
+					},
+				];
+			});
+
+		const context = createExecuteFunctions({
+			params: {
+				resource: 'media',
+				operation: 'upload',
+				workspaceId: 'ws-1',
+				binaryPropertyName: 'data',
+			},
+		});
+
+		const result = await new FoPost().execute.call(context);
+
+		expect(presignBody).toEqual({
+			workspaceId: 'ws-1',
+			filename: 'photo.png',
+			mimeType: 'image/png',
+			size: 12,
+		});
+		expect(putBody).toBe('binary-bytes');
+		expect(putHeaders['content-type']).toBe('image/png');
+		expect(putHeaders['x-api-key']).toBeUndefined();
+		expect(completeKey).toBe(TEST_API_KEY);
+		expect(result[0][0].json).toEqual({
+			id: 'media-1',
+			type: 'image',
+			name: 'photo.png',
+			url: 'https://cdn.test/photo.png',
+			previewUrl: 'https://cdn.test/preview/photo.png',
+			size: 12,
+		});
+		expect(nock.isDone()).toBe(true);
+	});
+});
+
 describe('continueOnFail', () => {
 	it('reports the failure as data instead of throwing', async () => {
 		nock(TEST_BASE_URL).get('/v1/posts/missing').reply(404, { error: 'not_found' });

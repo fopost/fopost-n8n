@@ -1,16 +1,17 @@
 import type {
 	IDataObject,
 	IExecuteFunctions,
+	IHttpRequestMethods,
 	ILoadOptionsFunctions,
 	INodeExecutionData,
 	INodePropertyOptions,
 	INodeType,
 	INodeTypeDescription,
+	JsonObject,
 } from 'n8n-workflow';
-import { NodeOperationError } from 'n8n-workflow';
+import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 
 import {
-	buildMultipartBody,
 	foPostApiRequest,
 	foPostApiRequestAllItems,
 	foPostApiRequestList,
@@ -382,30 +383,30 @@ async function executeMedia(this: IExecuteFunctions, operation: string, i: numbe
 		const binaryData = this.helpers.assertBinaryData(i, binaryPropertyName);
 		const buffer = await this.helpers.getBinaryDataBuffer(i, binaryPropertyName);
 
-		const { body, contentType } = buildMultipartBody(
-			[{ name: 'workspaceId', value: workspaceId }],
-			[
-				{
-					name: 'files',
-					filename: binaryData.fileName ?? 'upload',
-					contentType: binaryData.mimeType ?? 'application/octet-stream',
-					data: buffer,
-				},
-			],
-		);
+		const presigned = unwrap(
+			await foPostApiRequest.call(this, 'POST', '/media/presign', {
+				workspaceId,
+				filename: binaryData.fileName ?? 'upload',
+				mimeType: binaryData.mimeType ?? 'application/octet-stream',
+				size: buffer.length,
+			}),
+		) as IDataObject;
+
+		// Storage PUT: signed URL, no API key, exactly the headers the API handed back.
+		try {
+			await this.helpers.httpRequest({
+				method: (presigned.method as IHttpRequestMethods) ?? 'PUT',
+				url: presigned.uploadUrl as string,
+				headers: (presigned.headers as IDataObject) ?? {},
+				body: buffer,
+				json: false,
+			});
+		} catch (error) {
+			throw new NodeApiError(this.getNode(), error as JsonObject);
+		}
 
 		return unwrap(
-			await foPostApiRequest.call(
-				this,
-				'POST',
-				'/media/upload',
-				body,
-				{},
-				{
-					headers: { Accept: 'application/json', 'Content-Type': contentType },
-					json: false,
-				},
-			),
+			await foPostApiRequest.call(this, 'POST', `/media/presign/${presigned.uploadId}/complete`),
 		);
 	}
 
