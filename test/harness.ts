@@ -119,6 +119,9 @@ function buildHelpers() {
 			applyCredentials(options, { apiKey: TEST_API_KEY, baseUrl: TEST_BASE_URL });
 			return await rawRequest(options);
 		},
+		async httpRequest(this: unknown, options: IHttpRequestOptions) {
+			return await rawRequest(options);
+		},
 		returnJsonArray(data: IDataObject | IDataObject[]): INodeExecutionData[] {
 			const list = Array.isArray(data) ? data : [data];
 			return list.map((json) => ({ json }));
