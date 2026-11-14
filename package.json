@@ -5,7 +5,8 @@
   "license": "MIT",
   "author": {
     "name": "Porter Bridge, LLC",
-    "url": "https://fopost.com"
+    "url": "https://fopost.com",
+    "email": "npm@fopost.com"
   },
   "homepage": "https://fopost.com",
   "repository": {
