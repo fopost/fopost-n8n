@@ -1,7 +1,7 @@
 {
   "name": "n8n-nodes-fopost",
-  "version": "0.1.0",
-  "description": "n8n community node for FoPost. Schedule and publish social media posts, read analytics, and trigger workflows on publishing events.",
+  "version": "0.2.0",
+  "description": "n8n community node for FoPost. Schedule and publish social media posts, work the social inbox, read analytics, and trigger workflows on publishing and inbox events.",
   "license": "MIT",
   "author": {
     "name": "Porter Bridge, LLC",
@@ -22,7 +22,8 @@
     "social-media",
     "publishing",
     "scheduling",
-    "analytics"
+    "analytics",
+    "social-inbox"
   ],
   "engines": {
     "node": ">=22"
