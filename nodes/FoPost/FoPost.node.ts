@@ -24,6 +24,7 @@ import {
 import { accountFields, accountOperations } from './descriptions/AccountDescription';
 import { analyticsFields, analyticsOperations } from './descriptions/AnalyticsDescription';
 import { automationFields, automationOperations } from './descriptions/AutomationDescription';
+import { inboxFields, inboxOperations } from './descriptions/InboxDescription';
 import { labelFields, labelOperations } from './descriptions/LabelDescription';
 import { mediaFields, mediaOperations } from './descriptions/MediaDescription';
 import { postFields, postOperations } from './descriptions/PostDescription';
@@ -79,6 +80,7 @@ export class FoPost implements INodeType {
 					{ name: 'Account', value: 'account' },
 					{ name: 'Analytics', value: 'analytics' },
 					{ name: 'Automation', value: 'automation' },
+					{ name: 'Inbox', value: 'inbox' },
 					{ name: 'Label', value: 'label' },
 					{ name: 'Media', value: 'media' },
 					{ name: 'Post', value: 'post' },
@@ -94,6 +96,8 @@ export class FoPost implements INodeType {
 			...workspaceFields,
 			...mediaOperations,
 			...mediaFields,
+			...inboxOperations,
+			...inboxFields,
 			...labelOperations,
 			...labelFields,
 			...analyticsOperations,
@@ -159,6 +163,8 @@ export class FoPost implements INodeType {
 					responseData = await executeWorkspace.call(this, operation, i);
 				} else if (resource === 'media') {
 					responseData = await executeMedia.call(this, operation, i);
+				} else if (resource === 'inbox') {
+					responseData = await executeInbox.call(this, operation, i);
 				} else if (resource === 'label') {
 					responseData = await executeLabel.call(this, operation, i);
 				} else if (resource === 'analytics') {
@@ -455,6 +461,44 @@ async function executeMedia(
 	}
 
 	throw new NodeOperationError(this.getNode(), `Unknown media operation "${operation}"`, {
+		itemIndex: i,
+	});
+}
+
+// ─── Inbox ──────────────────────────────────────────────────────────
+
+async function executeInbox(
+	this: IExecuteFunctions,
+	operation: string,
+	i: number,
+): Promise<FoPostResponse> {
+	if (operation === 'getAll') {
+		const returnAll = this.getNodeParameter('returnAll', i) as boolean;
+		const filters = stripEmpty(this.getNodeParameter('filters', i, {}) as IDataObject);
+
+		if (returnAll) {
+			return await foPostApiRequestAllItems.call(this, 'GET', '/inbox', {}, filters);
+		}
+
+		const limit = this.getNodeParameter('limit', i) as number;
+		const response = await foPostApiRequest.call(
+			this,
+			'GET',
+			'/inbox',
+			{},
+			{ ...filters, page: 1, per_page: Math.min(limit, 100) },
+		);
+		const page = unwrap(response);
+		return (Array.isArray(page) ? page : []).slice(0, limit);
+	}
+
+	if (operation === 'reply') {
+		const itemId = this.getNodeParameter('itemId', i) as string;
+		const text = this.getNodeParameter('text', i) as string;
+		return unwrap(await foPostApiRequest.call(this, 'POST', `/inbox/${itemId}/reply`, { text }));
+	}
+
+	throw new NodeOperationError(this.getNode(), `Unknown inbox operation "${operation}"`, {
 		itemIndex: i,
 	});
 }

@@ -291,6 +291,61 @@ describe('loadOptions', () => {
 	});
 });
 
+describe('inbox', () => {
+	it('lists unread mentions with the filters as query parameters', async () => {
+		let query: Record<string, string> = {};
+
+		nock(TEST_BASE_URL)
+			.get('/v1/inbox')
+			.query((received) => {
+				query = received as Record<string, string>;
+				return true;
+			})
+			.reply(200, {
+				data: [
+					{ id: 'item-1', type: 'mention', text: 'Love the new release' },
+					{ id: 'item-2', type: 'mention', text: 'When is the next drop?' },
+				],
+				meta: { current_page: 1, per_page: 1, total: 2, last_page: 2 },
+			});
+
+		const context = createExecuteFunctions({
+			params: {
+				resource: 'inbox',
+				operation: 'getAll',
+				returnAll: false,
+				limit: 1,
+				filters: { type: 'mention', state: 'unread', q: '' },
+			},
+		});
+		const [items] = await new FoPost().execute.call(context);
+
+		expect(query).toEqual({ type: 'mention', state: 'unread', page: '1', per_page: '1' });
+		expect(items.map((item) => item.json.id)).toEqual(['item-1']);
+	});
+
+	it('replies to an item with the given text', async () => {
+		let body: Record<string, unknown> = {};
+
+		nock(TEST_BASE_URL)
+			.post('/v1/inbox/item-1/reply', (received) => {
+				body = received as Record<string, unknown>;
+				return true;
+			})
+			.reply(200, {
+				data: { item: { id: 'item-1', state: 'resolved' }, reply: { external_id: 'x-1' } },
+			});
+
+		const context = createExecuteFunctions({
+			params: { resource: 'inbox', operation: 'reply', itemId: 'item-1', text: 'Thank you!' },
+		});
+		const [items] = await new FoPost().execute.call(context);
+
+		expect(body).toEqual({ text: 'Thank you!' });
+		expect(items[0].json.reply).toEqual({ external_id: 'x-1' });
+	});
+});
+
 describe('analytics', () => {
 	it('sends the account filter as account_id', async () => {
 		nock(TEST_BASE_URL)
