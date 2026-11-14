@@ -17,6 +17,9 @@ export const DEFAULT_BASE_URL = 'https://api.fopost.com';
 /** Hard stop so a malformed `meta` block can never spin forever. */
 const MAX_PAGES = 500;
 
+/** What a FoPost endpoint answers: an envelope, a bare object, or a bare list. */
+export type FoPostResponse = IDataObject | IDataObject[];
+
 export type FoPostContext =
 	IExecuteFunctions | ILoadOptionsFunctions | IHookFunctions | IWebhookFunctions;
 
@@ -27,7 +30,7 @@ export async function foPostApiRequest(
 	body: IDataObject | Buffer = {},
 	qs: IDataObject = {},
 	overrides: Partial<IHttpRequestOptions> = {},
-): Promise<any> {
+): Promise<FoPostResponse> {
 	const credentials = await this.getCredentials(FOPOST_CREDENTIALS);
 	const baseUrl = ((credentials.baseUrl as string) || DEFAULT_BASE_URL).replace(/\/+$/, '');
 
@@ -49,16 +52,20 @@ export async function foPostApiRequest(
 	}
 
 	try {
-		return await this.helpers.httpRequestWithAuthentication.call(this, FOPOST_CREDENTIALS, options);
+		return (await this.helpers.httpRequestWithAuthentication.call(
+			this,
+			FOPOST_CREDENTIALS,
+			options,
+		)) as FoPostResponse;
 	} catch (error) {
 		throw new NodeApiError(this.getNode(), error as JsonObject);
 	}
 }
 
 /** Most FoPost reads and writes answer `{ "data": ... }`. */
-export function unwrap(response: any): any {
+export function unwrap(response: FoPostResponse): FoPostResponse {
 	if (response && typeof response === 'object' && !Array.isArray(response) && 'data' in response) {
-		return response.data;
+		return response.data as FoPostResponse;
 	}
 	return response;
 }
@@ -81,10 +88,11 @@ export async function foPostApiRequestAllItems(
 			page,
 			per_page: 100,
 		});
-		const items = Array.isArray(response?.data) ? (response.data as IDataObject[]) : [];
+		const envelope = (Array.isArray(response) ? {} : (response ?? {})) as IDataObject;
+		const items = Array.isArray(envelope.data) ? (envelope.data as IDataObject[]) : [];
 		collected.push(...items);
 
-		const reported = Number(response?.meta?.last_page);
+		const reported = Number((envelope.meta as IDataObject | undefined)?.last_page);
 		lastPage = Number.isFinite(reported) && reported > 0 ? reported : page;
 		if (items.length === 0) break;
 		page += 1;

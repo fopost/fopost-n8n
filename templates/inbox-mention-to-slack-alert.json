@@ -1,0 +1,223 @@
+{
+  "name": "Get a Slack alert when someone mentions your brand, with FoPost",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Get a Slack alert when someone mentions your brand\n\n### How it works\nFoPost watches the social accounts you connected. When someone mentions one of them, FoPost calls this workflow. The workflow loads the mention from the FoPost inbox and posts the author, network, text and a link to the original post in Slack, so the right person can answer while it is still fresh.\n\nMade for support and community teams who live in Slack.\n\n### Setup\n1. Install the **FoPost** community node: Settings → Community Nodes → Install → `n8n-nodes-fopost` (tested with 0.2.0). Docs: https://github.com/fopost/fopost-n8n\n2. Create a FoPost API key with the `inbox` and `webhooks` scopes at fopost.com → Settings → API Keys and add it as a **FoPost API** credential.\n3. Add a **Slack** credential.\n4. Pick your workspace in **New mention in FoPost** and set the Slack channel in **Configure**.\n5. Activate the workflow. FoPost registers the webhook on activation and removes it when you deactivate.\n\n### Customization\nAdd **Inbox Comment Received** or **Inbox Message Received** to the trigger events to alert on comments and direct messages too, and change the type filter in **Load the mention** to match.\n\n### Limitations\nMentions arrive as fast as each network reports them, from seconds to a few minutes.",
+        "height": 700,
+        "width": 520
+      },
+      "id": "d101796d-16bc-5441-976e-40ba4330b31f",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -680,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Load the mention\nThe webhook carries IDs only; the text comes from the inbox.",
+        "height": 340,
+        "width": 940,
+        "color": 7
+      },
+      "id": "2145b63a-7f59-5df8-a61e-4b5f8dfde19f",
+      "name": "Section: mention",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Alert the team\nOne Slack message per mention, with a link to reply.",
+        "height": 340,
+        "width": 280,
+        "color": 7
+      },
+      "id": "daa530d2-f335-506f-899c-ac8e428aaca3",
+      "name": "Section: alert",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        920,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "workspaceId": "REPLACE_WITH_FOPOST_WORKSPACE_ID",
+        "events": [
+          "inbox.mention_received"
+        ]
+      },
+      "id": "114781e0-42fd-547a-872b-200e4dea583a",
+      "name": "New mention in FoPost",
+      "type": "n8n-nodes-fopost.foPostTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        40
+      ],
+      "webhookId": "70a6fa32-9163-5eb9-9326-f40f35876a67"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "038261ec-8e8b-56f1-9d3c-b37644825d34",
+              "name": "slackChannel",
+              "value": "#social-mentions",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "b22e6845-4175-55c7-be72-c2b03124153f",
+      "name": "Configure",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "inbox",
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 25,
+        "filters": {
+          "account_id": "={{ $json.data.accountId }}",
+          "sort": "newest",
+          "type": "mention"
+        }
+      },
+      "id": "04d116f7-25d9-55df-a247-234177b81dcd",
+      "name": "Load the mention",
+      "type": "n8n-nodes-fopost.foPost",
+      "typeVersion": 1,
+      "position": [
+        460,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0b7cc5bc-2b64-5ce3-b564-eb74f4ea216a",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "={{ $('New mention in FoPost').first().json.data.itemId }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "1df37cbb-fd7f-50cf-9a19-52fd9e497264",
+      "name": "Match the webhook item",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        700,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $('Configure').first().json.slackChannel }}",
+          "mode": "name"
+        },
+        "text": "=New mention on {{ $json.platform }} from {{ $json.author_name || $json.author_handle || 'someone' }}{{ $json.author_handle ? ' (@' + $json.author_handle + ')' : '' }}:\n>{{ ($json.text || '').replace(/\\n/g, '\\n>') }}\n{{ $json.permalink ? '<' + $json.permalink + '|Open the post>' : '' }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "629c9fb6-b1d5-5c4b-904d-b408406f5c5f",
+      "name": "Alert in Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        960,
+        40
+      ],
+      "webhookId": "a1919e9f-ee17-5df4-b5a1-d40366c3752c"
+    }
+  ],
+  "connections": {
+    "New mention in FoPost": {
+      "main": [
+        [
+          {
+            "node": "Configure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure": {
+      "main": [
+        [
+          {
+            "node": "Load the mention",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load the mention": {
+      "main": [
+        [
+          {
+            "node": "Match the webhook item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match the webhook item": {
+      "main": [
+        [
+          {
+            "node": "Alert in Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

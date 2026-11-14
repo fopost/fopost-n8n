@@ -1,0 +1,231 @@
+{
+  "name": "Post new Shopify products to Instagram and Facebook with FoPost",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Post new Shopify products to Instagram and Facebook\n\n### How it works\nWhen you add a product in Shopify, this workflow checks that it is active and has a photo, then writes a launch post with the product name, price and link. FoPost posts the main product photo to your Instagram and Facebook accounts in the next free slot of your posting schedule.\n\nMade for shops that add products often and want every new arrival announced. It suits car dealers and property listings run on Shopify too.\n\n### Setup\n1. Install the **FoPost** community node: Settings → Community Nodes → Install → `n8n-nodes-fopost` (tested with 0.2.0). Docs: https://github.com/fopost/fopost-n8n\n2. Create a FoPost API key at fopost.com → Settings → API Keys and add it as a **FoPost API** credential.\n3. Add a **Shopify** credential (an Admin API access token with `read_products`).\n4. In FoPost, add posting slots under Settings → Posting Schedule.\n5. Open **Configure** and set your FoPost workspace ID, the Instagram and Facebook account IDs, your store URL and currency symbol.\n\n### Customization\nSwap **Add to FoPost queue** to Status → Scheduled with a Schedule At time, or add more account IDs to post on more networks.\n\n### Limitations\nDraft and archived products are skipped, as are products without an image, because Instagram needs one. Links in Instagram captions are not clickable, so the caption points to the bio.",
+        "height": 740,
+        "width": 520
+      },
+      "id": "9d564885-8f95-538c-bd66-4b1604fb7058",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -680,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Catch publishable products\nActive products with at least one image continue.",
+        "height": 340,
+        "width": 460,
+        "color": 7
+      },
+      "id": "8c96defa-2b82-58a0-901d-c1e860fdc398",
+      "name": "Section: product",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Queue the post\nOne post with the product photo, for both accounts.",
+        "height": 340,
+        "width": 700,
+        "color": 7
+      },
+      "id": "4bb93ab0-5bc5-5d1b-a329-d04886e14d20",
+      "name": "Section: post",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        440,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "accessToken",
+        "topic": "products/create"
+      },
+      "id": "9c1bb118-a6a1-563c-ac26-6438359e2294",
+      "name": "New Shopify product",
+      "type": "n8n-nodes-base.shopifyTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        40
+      ],
+      "webhookId": "6acf44b8-039a-5837-af8d-d0a39f2be58c"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4c47b54b-2bd7-5c42-828e-6d2a13f9a1f9",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "active",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "d70b6f2e-f224-562e-97df-b7e4dd626bc8",
+              "leftValue": "={{ $json.image?.src }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a4820242-8433-53c7-9ea5-1ac2537a6208",
+      "name": "Active with a photo",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        220,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6b27d52e-136b-5853-8d13-216956880e55",
+              "name": "workspaceId",
+              "value": "REPLACE_WITH_FOPOST_WORKSPACE_ID",
+              "type": "string"
+            },
+            {
+              "id": "eaf4891d-d624-5fd9-b9c0-90be2cf8a33c",
+              "name": "instagramAccountId",
+              "value": "REPLACE_WITH_INSTAGRAM_ACCOUNT_ID",
+              "type": "string"
+            },
+            {
+              "id": "48ef07dd-30c8-5f4b-9144-41a0f462d71b",
+              "name": "facebookAccountId",
+              "value": "REPLACE_WITH_FACEBOOK_ACCOUNT_ID",
+              "type": "string"
+            },
+            {
+              "id": "dc49cbf6-c17f-58e2-8a8b-b3dd7e881cc0",
+              "name": "storeUrl",
+              "value": "https://yourbrand.com",
+              "type": "string"
+            },
+            {
+              "id": "94aaab31-7051-592c-8fe6-066776faa79f",
+              "name": "currency",
+              "value": "$",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "514f6a5c-9ed7-5afe-8c5e-286e4b0f7bcd",
+      "name": "Configure",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "post",
+        "operation": "create",
+        "workspaceId": "={{ $('Configure').first().json.workspaceId }}",
+        "accounts": "={{ [$('Configure').first().json.instagramAccountId, $('Configure').first().json.facebookAccountId] }}",
+        "text": "=New in: {{ $json.title }}{{ $json.variants?.[0]?.price ? ' — ' + $('Configure').first().json.currency + $json.variants[0].price : '' }}\n\nShop it at {{ $('Configure').first().json.storeUrl }}/products/{{ $json.handle }} (link in bio)",
+        "media": {
+          "item": [
+            {
+              "type": "image",
+              "name": "={{ $json.handle }}.jpg",
+              "url": "={{ $json.image.src }}",
+              "alt": "={{ $json.image.alt || $json.title }}"
+            }
+          ]
+        },
+        "additionalFields": {
+          "addToQueue": true,
+          "internal_title": "=Product: {{ $json.title }}"
+        }
+      },
+      "id": "759a8167-76ec-51b7-8b66-b754e6f0da66",
+      "name": "Add to FoPost queue",
+      "type": "n8n-nodes-fopost.foPost",
+      "typeVersion": 1,
+      "position": [
+        720,
+        40
+      ]
+    }
+  ],
+  "connections": {
+    "New Shopify product": {
+      "main": [
+        [
+          {
+            "node": "Active with a photo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Active with a photo": {
+      "main": [
+        [
+          {
+            "node": "Configure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure": {
+      "main": [
+        [
+          {
+            "node": "Add to FoPost queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

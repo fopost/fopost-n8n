@@ -50,6 +50,8 @@ nodes/FoPostTrigger/
 test/
   harness.ts                           fake IExecuteFunctions / IHookFunctions / IWebhookFunctions
   *.test.ts                            jest + nock, offline
+templates/                             importable n8n workflows + listing copy (README.md)
+scripts/validate-templates.mjs         structure and sticky-note checks for templates/
 ```
 
 A request flows: node parameter → `executeX()` helper in `FoPost.node.ts` → `foPostApiRequest`
@@ -66,8 +68,12 @@ Descriptions carry no logic. Adding an operation is a new entry in the resource'
   `meta: { current_page, per_page, total, last_page, from, to }` (snake_case).
 - Error envelope: `{ "error": "<machine_code>", "message": "<human text>" }`; `402` may carry
   `upgrade_url`. Errors are wrapped in `NodeApiError` so n8n renders them.
-- Only `GET /v1/posts` is truly paginated. Every other list answers a plain array, so
-  `returnAll` there is a client-side slice (`foPostApiRequestList`).
+- `GET /v1/posts` and `GET /v1/inbox` are truly paginated. Every other list answers a plain
+  array, so `returnAll` there is a client-side slice (`foPostApiRequestList`).
+- Query parameters are snake_case: `workspace_id`, `account_id`. A camelCase name is silently
+  ignored by the API, which is how the account and media lists once ignored the workspace.
+- `schedule: "queue"` on create/update places the post in the next free posting slot; the node
+  exposes it as the **Add to Queue** boolean and never sends `addToQueue` itself.
 - Retries and backoff are n8n's job, not the node's. Do not add a retry loop.
 
 ### Webhooks
@@ -76,10 +82,13 @@ Descriptions carry no logic. Adding an operation is a new entry in the resource'
   **once**, at creation. It is stored in the workflow's static data.
 - FoPost delivers with `X-FoPost-Signature: sha256=<hex>`, an HMAC-SHA256 of the **raw** body
   keyed on that secret, plus `X-FoPost-Event` and `X-FoPost-Delivery`.
-- Events (from `WEBHOOK_EVENTS` in the API's `handlers/webhooks.ts`): `post.published`,
-  `post.failed`, `post.partially_failed`, `delivery.published`, `delivery.failed`,
-  `delivery.delayed`, `account.health_changed`. There is no `account.disconnected` event —
-  a disconnect arrives as `account.health_changed`.
+- Events mirror `WEBHOOK_EVENT_GROUPS` in the API's `packages/shared/src/types/webhook.ts` (20
+  events: posts, deliveries, accounts, blog, inbox, automations). When the API adds one, add it
+  to `FOPOST_WEBHOOK_EVENTS` and the trigger's options. Inbox events carry IDs only; the text
+  is read through Inbox → Get Many.
+- The body is `{ event, data, timestamp }`. FoPost also sends `X-FoPost-Timestamp` and
+  `X-FoPost-Signature-256` (HMAC of `${timestamp}.${body}`); the node still verifies the
+  original `X-FoPost-Signature`.
 - `checkExists` deletes an orphaned webhook whose secret we no longer hold, so `create` mints a
   fresh pair. Without the secret nothing can be verified, so keeping the orphan would be worse.
 
@@ -94,16 +103,19 @@ a type) and `npm install` exits non-zero. Do not lower the CI matrix or `engines
 
 ```bash
 npm install
-npm run build        # rimraf dist && tsc && gulp build:icons
-npm run lint         # eslint-plugin-n8n-nodes-base over credentials/, nodes/, package.json
+npm run build               # n8n-node build: tsc + copy icons into dist/
+npm run lint                # n8n-node lint (eslint.config.mjs → @n8n/node-cli/eslint)
 npm run lintfix
-npm test             # jest + nock, no network
+npm test                    # jest + nock, no network
+npm run validate:templates
 npm run format
 ```
 
-Lint, build and test all have to pass before a commit. `npm run lint` enforces n8n's naming
-and description conventions, which their verification process checks — treat a lint error as a
-release blocker, not a style nit.
+Lint, build and test all have to pass before a commit. `npm run lint` runs the same two
+plugins n8n's verification scanner (`npx @n8n/scan-community-package n8n-nodes-fopost`) runs:
+`eslint-plugin-n8n-nodes-base` and `@n8n/eslint-plugin-community-nodes`. Treat a lint error as
+a release blocker, not a style nit. The scanner itself only runs against a published version
+(it checks npm provenance first), so `npm run lint` is the pre-publish gate.
 
 ## Conventions
 
@@ -118,10 +130,13 @@ release blocker, not a style nit.
     "Choose from the list, or specify an ID using an `<a href=...>expression</a>` " string —
     the rule matches on the literal, so it cannot be hoisted into a shared constant
   - `limit` defaults to 50; `returnAll` is a boolean beside it
-- Two lint rules are switched off in `.eslintrc.js`: the credential documentation-URL rules,
-  because a community node documents itself at a real URL rather than an n8n-internal slug.
-- `tsconfig.lint.json` exists only so ESLint can type-check `package.json`; the build tsconfig
-  deliberately excludes it so `dist/package.json` is not emitted.
+- `eslint.config.mjs` is the `@n8n/node-cli` config plus one ignore for `test/`: the jest
+  harness imports `node:http`, which the community rules forbid in shipped code. Do not switch
+  rules off there; the scanner applies them regardless.
+- Scanner rules worth knowing: no `any`, `NodeConnectionTypes.Main` instead of `'main'`, a
+  caught error is never re-thrown raw (wrap it, or pass a `NodeApiError` through a variable),
+  no silent `catch {}` in webhook lifecycle methods (log through `this.logger`), the credential
+  has an `icon`, and `package.json` `author` has a name **and an email**.
 
 ## Testing
 
@@ -132,7 +147,11 @@ than a restatement of the source.
 
 Covered: the credential injects `X-API-Key`, `post:create` builds the documented body, thread
 blocks, `returnAll` paginates, limit slicing, `continueOnFail`, `loadOptions` dropdowns, the
-trigger registering and deleting a webhook, orphan cleanup, and a rejected bad signature.
+trigger registering and deleting a webhook, orphan cleanup, a rejected bad signature, inbox
+listing and replies, Add to Queue, and the snake_case `workspace_id` / `account_id` filters.
+
+The templates are not covered by jest. Before changing one, import it into a local n8n
+(`npm run dev`) and run it; `npm run validate:templates` only checks structure and notes.
 
 Never add a test that reaches the network.
 
@@ -142,11 +161,14 @@ Tag `v<version>` matching `package.json`; `.github/workflows/release.yml` verifi
 lints, builds, tests, checks that every path in the `n8n` manifest block exists in `dist/`,
 then runs `npm publish --access public --provenance`.
 
-Requires repo secret **`NPM_TOKEN`** — the same mechanism `fopost-js` uses. Provenance needs
-`id-token: write`, which the workflow already declares.
+Authentication is npm trusted publishing (OIDC) for `fopost/fopost-n8n`, workflow
+`release.yml`; no `NPM_TOKEN` secret. Provenance needs `id-token: write`, which the workflow
+declares. `prepublishOnly` refuses to run outside GitHub Actions: n8n rejects a version without
+provenance, and 0.1.0 was published from a laptop, which is why it fails the scanner.
 
-Listing the package on n8n's **verified community nodes** is a separate, manual submission to
-n8n after the package is on npm. Publishing does not do it.
+Listing the package on n8n's **verified community nodes** is a separate, manual submission at
+https://creators.n8n.io/nodes after a provenance-carrying version is on npm. Publishing does not
+do it.
 
 ## Git
 

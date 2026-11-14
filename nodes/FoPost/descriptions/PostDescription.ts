@@ -222,6 +222,14 @@ export const postFields: INodeProperties[] = [
 		displayOptions: showFor(['create', 'update']),
 		options: [
 			{
+				displayName: 'Add to Queue',
+				name: 'addToQueue',
+				type: 'boolean',
+				default: false,
+				description:
+					'Whether to place the post in the next free posting slot of its accounts, set under Settings → Posting Schedule in FoPost',
+			},
+			{
 				displayName: 'Artifact Type',
 				name: 'artifact_type',
 				type: 'options',

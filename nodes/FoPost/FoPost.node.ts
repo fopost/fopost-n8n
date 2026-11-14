@@ -9,12 +9,13 @@ import type {
 	INodeTypeDescription,
 	JsonObject,
 } from 'n8n-workflow';
-import { NodeApiError, NodeOperationError } from 'n8n-workflow';
+import { NodeApiError, NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 import {
 	foPostApiRequest,
 	foPostApiRequestAllItems,
 	foPostApiRequestList,
+	type FoPostResponse,
 	stripEmpty,
 	toIdArray,
 	toOptions,
@@ -23,6 +24,7 @@ import {
 import { accountFields, accountOperations } from './descriptions/AccountDescription';
 import { analyticsFields, analyticsOperations } from './descriptions/AnalyticsDescription';
 import { automationFields, automationOperations } from './descriptions/AutomationDescription';
+import { inboxFields, inboxOperations } from './descriptions/InboxDescription';
 import { labelFields, labelOperations } from './descriptions/LabelDescription';
 import { mediaFields, mediaOperations } from './descriptions/MediaDescription';
 import { postFields, postOperations } from './descriptions/PostDescription';
@@ -64,8 +66,8 @@ export class FoPost implements INodeType {
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
 		description: 'Schedule and publish social media posts with FoPost',
 		defaults: { name: 'FoPost' },
-		inputs: ['main'],
-		outputs: ['main'],
+		inputs: [NodeConnectionTypes.Main],
+		outputs: [NodeConnectionTypes.Main],
 		usableAsTool: true,
 		credentials: [{ name: 'foPostApi', required: true }],
 		properties: [
@@ -78,6 +80,7 @@ export class FoPost implements INodeType {
 					{ name: 'Account', value: 'account' },
 					{ name: 'Analytics', value: 'analytics' },
 					{ name: 'Automation', value: 'automation' },
+					{ name: 'Inbox', value: 'inbox' },
 					{ name: 'Label', value: 'label' },
 					{ name: 'Media', value: 'media' },
 					{ name: 'Post', value: 'post' },
@@ -93,6 +96,8 @@ export class FoPost implements INodeType {
 			...workspaceFields,
 			...mediaOperations,
 			...mediaFields,
+			...inboxOperations,
+			...inboxFields,
 			...labelOperations,
 			...labelFields,
 			...analyticsOperations,
@@ -118,7 +123,7 @@ export class FoPost implements INodeType {
 						'GET',
 						'/accounts',
 						{},
-						workspaceId ? { workspaceId } : {},
+						workspaceId ? { workspace_id: workspaceId } : {},
 					),
 				) ?? []) as IDataObject[];
 				return toOptions(accounts, ['displayName', 'username', 'name']);
@@ -148,7 +153,7 @@ export class FoPost implements INodeType {
 
 		for (let i = 0; i < items.length; i++) {
 			try {
-				let responseData: any;
+				let responseData: FoPostResponse;
 
 				if (resource === 'post') {
 					responseData = await executePost.call(this, operation, i);
@@ -158,6 +163,8 @@ export class FoPost implements INodeType {
 					responseData = await executeWorkspace.call(this, operation, i);
 				} else if (resource === 'media') {
 					responseData = await executeMedia.call(this, operation, i);
+				} else if (resource === 'inbox') {
+					responseData = await executeInbox.call(this, operation, i);
 				} else if (resource === 'label') {
 					responseData = await executeLabel.call(this, operation, i);
 				} else if (resource === 'analytics') {
@@ -186,7 +193,13 @@ export class FoPost implements INodeType {
 					});
 					continue;
 				}
-				throw error;
+				// API failures arrive as NodeApiError and keep their HTTP context; anything
+				// else is wrapped so n8n renders it against this item.
+				const nodeError =
+					error instanceof NodeApiError || error instanceof NodeOperationError
+						? error
+						: new NodeOperationError(this.getNode(), error as Error, { itemIndex: i });
+				throw nodeError;
 			}
 		}
 
@@ -196,7 +209,11 @@ export class FoPost implements INodeType {
 
 // ─── Posts ──────────────────────────────────────────────────────────
 
-async function executePost(this: IExecuteFunctions, operation: string, i: number): Promise<any> {
+async function executePost(
+	this: IExecuteFunctions,
+	operation: string,
+	i: number,
+): Promise<FoPostResponse> {
 	if (operation === 'create') {
 		const useThread = this.getNodeParameter('useThread', i, false) as boolean;
 		const text = this.getNodeParameter('text', i, '') as string;
@@ -204,7 +221,11 @@ async function executePost(this: IExecuteFunctions, operation: string, i: number
 			[]) as IDataObject[];
 		const media = ((this.getNodeParameter('media.item', i, []) as IDataObject[]) ??
 			[]) as IDataObject[];
-		const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
+		const { addToQueue, ...additionalFields } = this.getNodeParameter(
+			'additionalFields',
+			i,
+			{},
+		) as IDataObject;
 
 		const body: IDataObject = {
 			workspace_id: this.getNodeParameter('workspaceId', i) as string,
@@ -212,6 +233,7 @@ async function executePost(this: IExecuteFunctions, operation: string, i: number
 			content: buildContentBlocks(useThread, text, blocks, media),
 			...stripEmpty(additionalFields),
 		};
+		if (addToQueue === true) body.schedule = 'queue';
 
 		if (Array.isArray(additionalFields.labels)) body.labels = toIdArray(additionalFields.labels);
 
@@ -239,14 +261,20 @@ async function executePost(this: IExecuteFunctions, operation: string, i: number
 			{},
 			{ ...filters, page: 1, per_page: Math.min(limit, 100) },
 		);
-		return ((response?.data ?? []) as IDataObject[]).slice(0, limit);
+		const page = unwrap(response);
+		return (Array.isArray(page) ? page : []).slice(0, limit);
 	}
 
 	if (operation === 'update') {
 		const postId = this.getNodeParameter('postId', i) as string;
 		const text = this.getNodeParameter('text', i, '') as string;
-		const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
+		const { addToQueue, ...additionalFields } = this.getNodeParameter(
+			'additionalFields',
+			i,
+			{},
+		) as IDataObject;
 		const body: IDataObject = { ...stripEmpty(additionalFields) };
+		if (addToQueue === true) body.schedule = 'queue';
 		if (text !== '') body.content = [{ text }];
 		if (Array.isArray(additionalFields.labels)) body.labels = toIdArray(additionalFields.labels);
 
@@ -300,12 +328,22 @@ async function executePost(this: IExecuteFunctions, operation: string, i: number
 
 // ─── Accounts ───────────────────────────────────────────────────────
 
-async function executeAccount(this: IExecuteFunctions, operation: string, i: number): Promise<any> {
+async function executeAccount(
+	this: IExecuteFunctions,
+	operation: string,
+	i: number,
+): Promise<FoPostResponse> {
 	if (operation === 'getAll') {
 		const returnAll = this.getNodeParameter('returnAll', i) as boolean;
 		const limit = returnAll ? 0 : (this.getNodeParameter('limit', i) as number);
 		const workspaceId = this.getNodeParameter('workspaceId', i, '') as string;
-		return await foPostApiRequestList.call(this, '/accounts', { workspaceId }, returnAll, limit);
+		return await foPostApiRequestList.call(
+			this,
+			'/accounts',
+			{ workspace_id: workspaceId },
+			returnAll,
+			limit,
+		);
 	}
 
 	const accountId = this.getNodeParameter('accountId', i) as string;
@@ -348,7 +386,7 @@ async function executeWorkspace(
 	this: IExecuteFunctions,
 	operation: string,
 	i: number,
-): Promise<any> {
+): Promise<FoPostResponse> {
 	if (operation === 'getAll') {
 		const returnAll = this.getNodeParameter('returnAll', i) as boolean;
 		const limit = returnAll ? 0 : (this.getNodeParameter('limit', i) as number);
@@ -376,7 +414,11 @@ async function executeWorkspace(
 
 // ─── Media ──────────────────────────────────────────────────────────
 
-async function executeMedia(this: IExecuteFunctions, operation: string, i: number): Promise<any> {
+async function executeMedia(
+	this: IExecuteFunctions,
+	operation: string,
+	i: number,
+): Promise<FoPostResponse> {
 	if (operation === 'upload') {
 		const workspaceId = this.getNodeParameter('workspaceId', i) as string;
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', i) as string;
@@ -414,7 +456,13 @@ async function executeMedia(this: IExecuteFunctions, operation: string, i: numbe
 		const returnAll = this.getNodeParameter('returnAll', i) as boolean;
 		const limit = returnAll ? 0 : (this.getNodeParameter('limit', i) as number);
 		const workspaceId = this.getNodeParameter('workspaceId', i) as string;
-		return await foPostApiRequestList.call(this, '/media', { workspaceId }, returnAll, limit);
+		return await foPostApiRequestList.call(
+			this,
+			'/media',
+			{ workspace_id: workspaceId },
+			returnAll,
+			limit,
+		);
 	}
 
 	if (operation === 'delete') {
@@ -427,9 +475,51 @@ async function executeMedia(this: IExecuteFunctions, operation: string, i: numbe
 	});
 }
 
+// ─── Inbox ──────────────────────────────────────────────────────────
+
+async function executeInbox(
+	this: IExecuteFunctions,
+	operation: string,
+	i: number,
+): Promise<FoPostResponse> {
+	if (operation === 'getAll') {
+		const returnAll = this.getNodeParameter('returnAll', i) as boolean;
+		const filters = stripEmpty(this.getNodeParameter('filters', i, {}) as IDataObject);
+
+		if (returnAll) {
+			return await foPostApiRequestAllItems.call(this, 'GET', '/inbox', {}, filters);
+		}
+
+		const limit = this.getNodeParameter('limit', i) as number;
+		const response = await foPostApiRequest.call(
+			this,
+			'GET',
+			'/inbox',
+			{},
+			{ ...filters, page: 1, per_page: Math.min(limit, 100) },
+		);
+		const page = unwrap(response);
+		return (Array.isArray(page) ? page : []).slice(0, limit);
+	}
+
+	if (operation === 'reply') {
+		const itemId = this.getNodeParameter('itemId', i) as string;
+		const text = this.getNodeParameter('text', i) as string;
+		return unwrap(await foPostApiRequest.call(this, 'POST', `/inbox/${itemId}/reply`, { text }));
+	}
+
+	throw new NodeOperationError(this.getNode(), `Unknown inbox operation "${operation}"`, {
+		itemIndex: i,
+	});
+}
+
 // ─── Labels ─────────────────────────────────────────────────────────
 
-async function executeLabel(this: IExecuteFunctions, operation: string, i: number): Promise<any> {
+async function executeLabel(
+	this: IExecuteFunctions,
+	operation: string,
+	i: number,
+): Promise<FoPostResponse> {
 	if (operation === 'getAll') {
 		const returnAll = this.getNodeParameter('returnAll', i) as boolean;
 		const limit = returnAll ? 0 : (this.getNodeParameter('limit', i) as number);
@@ -468,12 +558,15 @@ async function executeAnalytics(
 	this: IExecuteFunctions,
 	operation: string,
 	i: number,
-): Promise<any> {
-	const options = stripEmpty(this.getNodeParameter('options', i, {}) as IDataObject);
+): Promise<FoPostResponse> {
+	const { accountId, ...range } = stripEmpty(
+		this.getNodeParameter('options', i, {}) as IDataObject,
+	);
 	const qs: IDataObject = {
 		days: this.getNodeParameter('days', i, 30) as number,
 		workspace_id: this.getNodeParameter('workspaceId', i, '') as string,
-		...options,
+		account_id: accountId,
+		...range,
 	};
 
 	if (operation === 'getOverview') {
@@ -500,7 +593,7 @@ async function executeAutomation(
 	this: IExecuteFunctions,
 	operation: string,
 	i: number,
-): Promise<any> {
+): Promise<FoPostResponse> {
 	if (operation === 'getAll') {
 		const returnAll = this.getNodeParameter('returnAll', i) as boolean;
 		const limit = returnAll ? 0 : (this.getNodeParameter('limit', i) as number);

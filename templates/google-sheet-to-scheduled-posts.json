@@ -1,0 +1,235 @@
+{
+  "name": "Schedule social posts from a Google Sheet with FoPost",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Schedule social posts from a Google Sheet\n\n### How it works\nPlan posts in a spreadsheet and let FoPost publish them. Each new row with text and a future **Publish At** time becomes a scheduled post on the accounts you pick, with the photo from **Image URL** when there is one. Rows without text or with a past time are skipped.\n\nMade for teams that plan content in a shared sheet: a real estate office adding new listings, a car dealer adding new arrivals, or a salon sharing its latest work.\n\n### Setup\n1. Install the **FoPost** community node: Settings → Community Nodes → Install → `n8n-nodes-fopost` (tested with 0.2.0). Docs: https://github.com/fopost/fopost-n8n\n2. Create a FoPost API key at fopost.com → Settings → API Keys and add it as a **FoPost API** credential.\n3. Create a sheet with the columns `Text`, `Image URL` and `Publish At` (format `2026-12-01 09:30`). Example row: `Just listed: 3-bed townhouse on Maple Street, open house Saturday` · `https://yourbrand.com/photos/maple.jpg` · `2026-12-05 10:00`.\n4. Add a **Google Sheets Trigger** credential and pick the sheet in **New row in content sheet**.\n5. Open **Configure** and set your FoPost workspace ID, the account IDs (comma-separated) and the time zone your sheet uses.\n\n### Customization\nAdd an `Accounts` column and use it instead of the fixed list in **Configure**.\n\n### Limitations\nOnly rows added after activation are picked up; edits to a row do not change its post.",
+        "height": 760,
+        "width": 520
+      },
+      "id": "2b9f2d24-e63b-5a60-b393-72f3910923ba",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -680,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Read new rows\nRows need text and a valid time in the future.",
+        "height": 340,
+        "width": 700,
+        "color": 7
+      },
+      "id": "b011d045-b690-585e-9be9-fd1b77b9b3c8",
+      "name": "Section: rows",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Schedule in FoPost\nThe sheet time is read in your time zone and sent as UTC.",
+        "height": 340,
+        "width": 460,
+        "color": 7
+      },
+      "id": "72caf848-4843-58d7-a156-e1cec283a165",
+      "name": "Section: schedule",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        680,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "id": "86692279-56f2-5b97-b8b6-9c4eabf8eff0",
+      "name": "New row in content sheet",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6b27d52e-136b-5853-8d13-216956880e55",
+              "name": "workspaceId",
+              "value": "REPLACE_WITH_FOPOST_WORKSPACE_ID",
+              "type": "string"
+            },
+            {
+              "id": "958990ec-75a7-58b1-8e4e-c57413f854ac",
+              "name": "accountIds",
+              "value": "REPLACE_WITH_ACCOUNT_ID_1,REPLACE_WITH_ACCOUNT_ID_2",
+              "type": "string"
+            },
+            {
+              "id": "5b4f9dc7-c30b-5cea-9d3f-129b3031a830",
+              "name": "timezone",
+              "value": "America/New_York",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "6faea302-8d3b-5a1c-b53d-749c370e008b",
+      "name": "Configure",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4f66322f-ae65-5cb1-be50-e44e10500417",
+              "leftValue": "={{ $json.Text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "10b513a8-caaa-54c5-836d-8981eccf8518",
+              "leftValue": "={{ DateTime.fromFormat(String($json['Publish At'] ?? ''), 'yyyy-MM-dd HH:mm', { zone: $('Configure').first().json.timezone }).isValid && DateTime.fromFormat(String($json['Publish At'] ?? ''), 'yyyy-MM-dd HH:mm', { zone: $('Configure').first().json.timezone }) > $now }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "7ddddd9e-d9ae-5a0a-805d-f59dbd000ca5",
+      "name": "Text and a future time",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        460,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "post",
+        "operation": "create",
+        "workspaceId": "={{ $('Configure').first().json.workspaceId }}",
+        "accounts": "={{ $('Configure').first().json.accountIds }}",
+        "text": "={{ $json.Text }}",
+        "media": {
+          "item": [
+            {
+              "type": "image",
+              "name": "={{ ($json['Image URL'] || '').split('/').pop() || 'image.jpg' }}",
+              "url": "={{ $json['Image URL'] }}"
+            }
+          ]
+        },
+        "additionalFields": {
+          "status": "scheduled",
+          "schedule_at": "={{ DateTime.fromFormat(String($json['Publish At'] ?? ''), 'yyyy-MM-dd HH:mm', { zone: $('Configure').first().json.timezone }).toUTC().toISO() }}"
+        }
+      },
+      "id": "a63a2f88-0836-56c8-992c-c61a51ad9403",
+      "name": "Schedule in FoPost",
+      "type": "n8n-nodes-fopost.foPost",
+      "typeVersion": 1,
+      "position": [
+        720,
+        40
+      ]
+    }
+  ],
+  "connections": {
+    "New row in content sheet": {
+      "main": [
+        [
+          {
+            "node": "Configure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure": {
+      "main": [
+        [
+          {
+            "node": "Text and a future time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text and a future time": {
+      "main": [
+        [
+          {
+            "node": "Schedule in FoPost",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

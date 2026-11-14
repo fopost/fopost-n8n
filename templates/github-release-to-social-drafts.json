@@ -1,0 +1,450 @@
+{
+  "name": "Turn GitHub releases into approved X, LinkedIn and Bluesky posts with FoPost",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Turn GitHub releases into approved social posts\n\n### How it works\nWhen you publish a release on GitHub, this workflow writes a launch post for X, Bluesky and LinkedIn from the release notes, each sized for its network. It saves them as drafts in FoPost and asks your team in Slack to approve. On **Approve**, FoPost publishes all three drafts. On **Decline**, the drafts stay in FoPost so someone can edit them and publish by hand.\n\nMade for developer tools and open-source teams who want every release announced without writing three posts each time.\n\n### Setup\n1. Install the **FoPost** community node: Settings → Community Nodes → Install → `n8n-nodes-fopost` (tested with 0.2.0). Docs: https://github.com/fopost/fopost-n8n\n2. Create a FoPost API key at fopost.com → Settings → API Keys and add it as a **FoPost API** credential.\n3. Add a **GitHub** credential and choose your owner and repository in the trigger.\n4. Add a **Slack** credential.\n5. Open **Configure** and paste your FoPost workspace ID, the account ID for each network (FoPost → Accounts, or the FoPost node's Account → Get Many) and the Slack channel. Leave an account ID empty to skip that network.\n\n### Customization\nEdit the wording in **Write a draft per network**, or add a network by adding one more entry there and an account ID in **Configure**.\n\n### Limitations\nPre-releases and draft releases are skipped. The Slack approval waits up to 7 days.",
+        "height": 760,
+        "width": 520
+      },
+      "id": "a93dab5c-f468-5810-9a12-a92187f715fc",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -680,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Catch the release\nOnly published, non-prerelease releases continue.",
+        "height": 360,
+        "width": 460,
+        "color": 7
+      },
+      "id": "3b93540f-baf8-5106-bec0-778f0c7a46e5",
+      "name": "Section: release",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Write and save drafts\nOne post per network, trimmed to its length limit, saved as a FoPost draft.",
+        "height": 360,
+        "width": 700,
+        "color": 7
+      },
+      "id": "0032f9ed-3376-5b23-b92c-bf593902137e",
+      "name": "Section: drafts",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        440,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Approve and publish\nOne Slack message for the whole release. Approve publishes every draft.",
+        "height": 360,
+        "width": 940,
+        "color": 7
+      },
+      "id": "87b5cb8e-6234-5624-88c0-f9830753ad8b",
+      "name": "Section: approval",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1160,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "accessToken",
+        "owner": {
+          "__rl": true,
+          "value": "your-org",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "your-repo",
+          "mode": "name"
+        },
+        "events": [
+          "release"
+        ],
+        "options": {}
+      },
+      "id": "72c6b1f0-05fb-54af-ac92-4eff7b25661c",
+      "name": "GitHub release published",
+      "type": "n8n-nodes-base.githubTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        40
+      ],
+      "webhookId": "7e3cb0ae-2f84-53ad-b9fd-5a51f6574115"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e19cfc79-fbf0-5d68-ac2b-7ca07820b48d",
+              "leftValue": "={{ $json.body.action }}",
+              "rightValue": "published",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "0efa7b26-aa0e-5749-a54d-4ce109440c5c",
+              "leftValue": "={{ $json.body.release.prerelease }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "7316a01b-1ca3-5015-97b0-4399407e7fbd",
+      "name": "Only published releases",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        220,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6b27d52e-136b-5853-8d13-216956880e55",
+              "name": "workspaceId",
+              "value": "REPLACE_WITH_FOPOST_WORKSPACE_ID",
+              "type": "string"
+            },
+            {
+              "id": "e4c2ae0f-0c33-5d07-ae42-9c1c77616852",
+              "name": "xAccountId",
+              "value": "REPLACE_WITH_X_ACCOUNT_ID",
+              "type": "string"
+            },
+            {
+              "id": "c66a8b0b-93f8-5b11-a006-354724e8ce4b",
+              "name": "blueskyAccountId",
+              "value": "REPLACE_WITH_BLUESKY_ACCOUNT_ID",
+              "type": "string"
+            },
+            {
+              "id": "68a6358a-78c8-5343-91fb-a45b85c5b6d3",
+              "name": "linkedinAccountId",
+              "value": "REPLACE_WITH_LINKEDIN_ACCOUNT_ID",
+              "type": "string"
+            },
+            {
+              "id": "038261ec-8e8b-56f1-9d3c-b37644825d34",
+              "name": "slackChannel",
+              "value": "#releases",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "d4338461-19b6-554f-bd83-ae0bb96db861",
+      "name": "Configure",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const { release, repository } = $('GitHub release published').first().json.body;\nconst cfg = $('Configure').first().json;\nconst title = release.name || release.tag_name;\nconst url = release.html_url;\n\n// Release notes as bullet lines: headings dropped, list markers stripped.\nconst notes = (release.body || '')\n  .split('\\n')\n  .filter((line) => !line.trim().startsWith('#'))\n  .map((line) => line.replace(/^[*\\-\\s]+/, '').trim())\n  .filter((line) => line.length > 0);\n\n// Add notes until the next one would push the post past the network limit.\nfunction fit(intro, limit) {\n  let text = intro;\n  for (const note of notes) {\n    const next = `${text}\\n• ${note}`;\n    if (`${next}\\n\\n${url}`.length > limit) break;\n    text = next;\n  }\n  return `${text}\\n\\n${url}`;\n}\n\nconst drafts = [\n  { network: 'X', accountId: cfg.xAccountId, text: fit(`${title} is out.`, 280) },\n  { network: 'Bluesky', accountId: cfg.blueskyAccountId, text: fit(`${title} is out.`, 300) },\n  {\n    network: 'LinkedIn',\n    accountId: cfg.linkedinAccountId,\n    text: fit(`We just shipped ${title} of ${repository.full_name}. What is new:`, 3000),\n  },\n];\n\n// Skip any network whose account ID was left empty or unchanged in Configure.\nreturn drafts\n  .filter((d) => d.accountId && !d.accountId.startsWith('REPLACE_'))\n  .map((d) => ({ json: { ...d, workspaceId: cfg.workspaceId, release: title } }));\n"
+      },
+      "id": "ebc07200-dd89-5a4f-a45b-cfe3cbce2fa6",
+      "name": "Write a draft per network",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "post",
+        "operation": "create",
+        "workspaceId": "={{ $json.workspaceId }}",
+        "accounts": "={{ [$json.accountId] }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "internal_title": "={{ $json.release }} — {{ $json.network }}",
+          "status": "draft"
+        }
+      },
+      "id": "d8446db5-6a6b-5b86-87a2-ff26552c29a0",
+      "name": "Save draft in FoPost",
+      "type": "n8n-nodes-fopost.foPost",
+      "typeVersion": 1,
+      "position": [
+        960,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "id",
+              "renameField": true,
+              "outputFieldName": "postIds"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e2ece86f-2bfd-5c4d-9f90-3ee92ec09f69",
+      "name": "Collect draft IDs",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $('Configure').first().json.slackChannel }}",
+          "mode": "name"
+        },
+        "message": "={{ $('Write a draft per network').first().json.release }} is out. {{ $json.postIds.length }} drafts are waiting in FoPost:\n\n{{ $('Write a draft per network').all().map(d => '*' + d.json.network + '*\\n' + d.json.text).join('\\n\\n') }}\n\nApprove to publish all of them now.",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double",
+            "approveLabel": "Publish",
+            "disapproveLabel": "Keep as Drafts"
+          }
+        },
+        "options": {
+          "limitWaitTime": {
+            "values": {
+              "limitType": "afterTimeInterval",
+              "resumeAmount": 7,
+              "resumeUnit": "days"
+            }
+          }
+        }
+      },
+      "id": "a9cebf17-1edb-5582-9bb2-3e939c0a96eb",
+      "name": "Ask for approval in Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        1420,
+        40
+      ],
+      "webhookId": "2ba4ba41-60f0-51b3-9949-d57fc86b826e"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a3bc12c7-9548-5589-9ca0-cae79350ae6f",
+              "leftValue": "={{ $json.data.approved }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "815384d7-55af-5e32-840d-75bc508eb29b",
+      "name": "Approved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1640,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// One item per draft saved earlier in this run.\nreturn $('Collect draft IDs')\n  .first()\n  .json.postIds.map((postId) => ({ json: { postId } }));\n"
+      },
+      "id": "edcb3aa6-8d3c-5d0e-a16a-0032f9da26f6",
+      "name": "List approved drafts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1860,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "post",
+        "operation": "publish",
+        "postId": "={{ $json.postId }}"
+      },
+      "id": "aaad3ca6-ff38-5401-9361-50a38d6cbf62",
+      "name": "Publish in FoPost",
+      "type": "n8n-nodes-fopost.foPost",
+      "typeVersion": 1,
+      "position": [
+        2080,
+        -20
+      ]
+    }
+  ],
+  "connections": {
+    "GitHub release published": {
+      "main": [
+        [
+          {
+            "node": "Only published releases",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Only published releases": {
+      "main": [
+        [
+          {
+            "node": "Configure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure": {
+      "main": [
+        [
+          {
+            "node": "Write a draft per network",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write a draft per network": {
+      "main": [
+        [
+          {
+            "node": "Save draft in FoPost",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save draft in FoPost": {
+      "main": [
+        [
+          {
+            "node": "Collect draft IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect draft IDs": {
+      "main": [
+        [
+          {
+            "node": "Ask for approval in Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ask for approval in Slack": {
+      "main": [
+        [
+          {
+            "node": "Approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approved?": {
+      "main": [
+        [
+          {
+            "node": "List approved drafts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List approved drafts": {
+      "main": [
+        [
+          {
+            "node": "Publish in FoPost",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
