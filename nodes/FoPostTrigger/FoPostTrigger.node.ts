@@ -10,6 +10,8 @@ import type {
 	IWebhookFunctions,
 	IWebhookResponseData,
 } from 'n8n-workflow';
+import { NodeConnectionTypes } from 'n8n-workflow';
+
 import { foPostApiRequest, toOptions, unwrap } from '../FoPost/GenericFunctions';
 
 export const FOPOST_WEBHOOK_EVENTS = [
@@ -53,7 +55,7 @@ export class FoPostTrigger implements INodeType {
 		description: 'Starts a workflow when FoPost reports a publishing event',
 		defaults: { name: 'FoPost Trigger' },
 		inputs: [],
-		outputs: ['main'],
+		outputs: [NodeConnectionTypes.Main],
 		credentials: [{ name: 'foPostApi', required: true }],
 		webhooks: [
 			{
@@ -192,7 +194,11 @@ export class FoPostTrigger implements INodeType {
 						'DELETE',
 						`/webhooks/${webhookData.webhookId as string}`,
 					);
-				} catch {
+				} catch (error) {
+					this.logger.warn('FoPost webhook could not be removed on deactivation', {
+						webhookId: webhookData.webhookId as string,
+						error: (error as Error).message,
+					});
 					return false;
 				}
 

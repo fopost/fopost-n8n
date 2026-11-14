@@ -9,12 +9,13 @@ import type {
 	INodeTypeDescription,
 	JsonObject,
 } from 'n8n-workflow';
-import { NodeApiError, NodeOperationError } from 'n8n-workflow';
+import { NodeApiError, NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 import {
 	foPostApiRequest,
 	foPostApiRequestAllItems,
 	foPostApiRequestList,
+	type FoPostResponse,
 	stripEmpty,
 	toIdArray,
 	toOptions,
@@ -64,8 +65,8 @@ export class FoPost implements INodeType {
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
 		description: 'Schedule and publish social media posts with FoPost',
 		defaults: { name: 'FoPost' },
-		inputs: ['main'],
-		outputs: ['main'],
+		inputs: [NodeConnectionTypes.Main],
+		outputs: [NodeConnectionTypes.Main],
 		usableAsTool: true,
 		credentials: [{ name: 'foPostApi', required: true }],
 		properties: [
@@ -148,7 +149,7 @@ export class FoPost implements INodeType {
 
 		for (let i = 0; i < items.length; i++) {
 			try {
-				let responseData: any;
+				let responseData: FoPostResponse;
 
 				if (resource === 'post') {
 					responseData = await executePost.call(this, operation, i);
@@ -186,7 +187,13 @@ export class FoPost implements INodeType {
 					});
 					continue;
 				}
-				throw error;
+				// API failures arrive as NodeApiError and keep their HTTP context; anything
+				// else is wrapped so n8n renders it against this item.
+				const nodeError =
+					error instanceof NodeApiError || error instanceof NodeOperationError
+						? error
+						: new NodeOperationError(this.getNode(), error as Error, { itemIndex: i });
+				throw nodeError;
 			}
 		}
 
@@ -196,7 +203,11 @@ export class FoPost implements INodeType {
 
 // ─── Posts ──────────────────────────────────────────────────────────
 
-async function executePost(this: IExecuteFunctions, operation: string, i: number): Promise<any> {
+async function executePost(
+	this: IExecuteFunctions,
+	operation: string,
+	i: number,
+): Promise<FoPostResponse> {
 	if (operation === 'create') {
 		const useThread = this.getNodeParameter('useThread', i, false) as boolean;
 		const text = this.getNodeParameter('text', i, '') as string;
@@ -239,7 +250,8 @@ async function executePost(this: IExecuteFunctions, operation: string, i: number
 			{},
 			{ ...filters, page: 1, per_page: Math.min(limit, 100) },
 		);
-		return ((response?.data ?? []) as IDataObject[]).slice(0, limit);
+		const page = unwrap(response);
+		return (Array.isArray(page) ? page : []).slice(0, limit);
 	}
 
 	if (operation === 'update') {
@@ -300,12 +312,22 @@ async function executePost(this: IExecuteFunctions, operation: string, i: number
 
 // ─── Accounts ───────────────────────────────────────────────────────
 
-async function executeAccount(this: IExecuteFunctions, operation: string, i: number): Promise<any> {
+async function executeAccount(
+	this: IExecuteFunctions,
+	operation: string,
+	i: number,
+): Promise<FoPostResponse> {
 	if (operation === 'getAll') {
 		const returnAll = this.getNodeParameter('returnAll', i) as boolean;
 		const limit = returnAll ? 0 : (this.getNodeParameter('limit', i) as number);
 		const workspaceId = this.getNodeParameter('workspaceId', i, '') as string;
-		return await foPostApiRequestList.call(this, '/accounts', { workspaceId }, returnAll, limit);
+		return await foPostApiRequestList.call(
+			this,
+			'/accounts',
+			{ workspace_id: workspaceId },
+			returnAll,
+			limit,
+		);
 	}
 
 	const accountId = this.getNodeParameter('accountId', i) as string;
@@ -348,7 +370,7 @@ async function executeWorkspace(
 	this: IExecuteFunctions,
 	operation: string,
 	i: number,
-): Promise<any> {
+): Promise<FoPostResponse> {
 	if (operation === 'getAll') {
 		const returnAll = this.getNodeParameter('returnAll', i) as boolean;
 		const limit = returnAll ? 0 : (this.getNodeParameter('limit', i) as number);
@@ -376,7 +398,11 @@ async function executeWorkspace(
 
 // ─── Media ──────────────────────────────────────────────────────────
 
-async function executeMedia(this: IExecuteFunctions, operation: string, i: number): Promise<any> {
+async function executeMedia(
+	this: IExecuteFunctions,
+	operation: string,
+	i: number,
+): Promise<FoPostResponse> {
 	if (operation === 'upload') {
 		const workspaceId = this.getNodeParameter('workspaceId', i) as string;
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', i) as string;
@@ -414,7 +440,13 @@ async function executeMedia(this: IExecuteFunctions, operation: string, i: numbe
 		const returnAll = this.getNodeParameter('returnAll', i) as boolean;
 		const limit = returnAll ? 0 : (this.getNodeParameter('limit', i) as number);
 		const workspaceId = this.getNodeParameter('workspaceId', i) as string;
-		return await foPostApiRequestList.call(this, '/media', { workspaceId }, returnAll, limit);
+		return await foPostApiRequestList.call(
+			this,
+			'/media',
+			{ workspace_id: workspaceId },
+			returnAll,
+			limit,
+		);
 	}
 
 	if (operation === 'delete') {
@@ -429,7 +461,11 @@ async function executeMedia(this: IExecuteFunctions, operation: string, i: numbe
 
 // ─── Labels ─────────────────────────────────────────────────────────
 
-async function executeLabel(this: IExecuteFunctions, operation: string, i: number): Promise<any> {
+async function executeLabel(
+	this: IExecuteFunctions,
+	operation: string,
+	i: number,
+): Promise<FoPostResponse> {
 	if (operation === 'getAll') {
 		const returnAll = this.getNodeParameter('returnAll', i) as boolean;
 		const limit = returnAll ? 0 : (this.getNodeParameter('limit', i) as number);
@@ -468,7 +504,7 @@ async function executeAnalytics(
 	this: IExecuteFunctions,
 	operation: string,
 	i: number,
-): Promise<any> {
+): Promise<FoPostResponse> {
 	const options = stripEmpty(this.getNodeParameter('options', i, {}) as IDataObject);
 	const qs: IDataObject = {
 		days: this.getNodeParameter('days', i, 30) as number,
@@ -500,7 +536,7 @@ async function executeAutomation(
 	this: IExecuteFunctions,
 	operation: string,
 	i: number,
-): Promise<any> {
+): Promise<FoPostResponse> {
 	if (operation === 'getAll') {
 		const returnAll = this.getNodeParameter('returnAll', i) as boolean;
 		const limit = returnAll ? 0 : (this.getNodeParameter('limit', i) as number);

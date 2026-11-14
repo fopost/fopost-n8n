@@ -1,5 +1,6 @@
 import type {
 	IAuthenticateGeneric,
+	Icon,
 	ICredentialTestRequest,
 	ICredentialType,
 	INodeProperties,
@@ -9,6 +10,11 @@ export class FoPostApi implements ICredentialType {
 	name = 'foPostApi';
 
 	displayName = 'FoPost API';
+
+	icon: Icon = {
+		light: 'file:../nodes/FoPost/fopost.svg',
+		dark: 'file:../nodes/FoPost/fopost.dark.svg',
+	};
 
 	documentationUrl = 'https://fopost.com/docs';
 
