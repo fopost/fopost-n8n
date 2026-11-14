@@ -368,3 +368,32 @@ describe('analytics', () => {
 		expect(nock.isDone()).toBe(true);
 	});
 });
+
+describe('post:create with Add to Queue', () => {
+	it('asks the API for the next free slot instead of sending the flag', async () => {
+		let body: Record<string, unknown> = {};
+
+		nock(TEST_BASE_URL)
+			.post('/v1/posts', (received) => {
+				body = received as Record<string, unknown>;
+				return true;
+			})
+			.reply(201, { data: { id: 'post-1', status: 'scheduled' } });
+
+		const context = createExecuteFunctions({
+			params: {
+				resource: 'post',
+				operation: 'create',
+				workspaceId: 'ws-1',
+				accounts: ['acc-1'],
+				useThread: false,
+				text: 'New on the blog',
+				additionalFields: { addToQueue: true },
+			},
+		});
+		await new FoPost().execute.call(context);
+
+		expect(body.schedule).toBe('queue');
+		expect(body).not.toHaveProperty('addToQueue');
+	});
+});

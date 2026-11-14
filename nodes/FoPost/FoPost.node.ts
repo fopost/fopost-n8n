@@ -221,7 +221,11 @@ async function executePost(
 			[]) as IDataObject[];
 		const media = ((this.getNodeParameter('media.item', i, []) as IDataObject[]) ??
 			[]) as IDataObject[];
-		const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
+		const { addToQueue, ...additionalFields } = this.getNodeParameter(
+			'additionalFields',
+			i,
+			{},
+		) as IDataObject;
 
 		const body: IDataObject = {
 			workspace_id: this.getNodeParameter('workspaceId', i) as string,
@@ -229,6 +233,7 @@ async function executePost(
 			content: buildContentBlocks(useThread, text, blocks, media),
 			...stripEmpty(additionalFields),
 		};
+		if (addToQueue === true) body.schedule = 'queue';
 
 		if (Array.isArray(additionalFields.labels)) body.labels = toIdArray(additionalFields.labels);
 
@@ -263,8 +268,13 @@ async function executePost(
 	if (operation === 'update') {
 		const postId = this.getNodeParameter('postId', i) as string;
 		const text = this.getNodeParameter('text', i, '') as string;
-		const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
+		const { addToQueue, ...additionalFields } = this.getNodeParameter(
+			'additionalFields',
+			i,
+			{},
+		) as IDataObject;
 		const body: IDataObject = { ...stripEmpty(additionalFields) };
+		if (addToQueue === true) body.schedule = 'queue';
 		if (text !== '') body.content = [{ text }];
 		if (Array.isArray(additionalFields.labels)) body.labels = toIdArray(additionalFields.labels);
 
