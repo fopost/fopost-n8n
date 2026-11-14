@@ -15,13 +15,26 @@ import { NodeConnectionTypes } from 'n8n-workflow';
 import { foPostApiRequest, toOptions, unwrap } from '../FoPost/GenericFunctions';
 
 export const FOPOST_WEBHOOK_EVENTS = [
+	'account.connected',
+	'account.disconnected',
 	'account.health_changed',
+	'article.published',
+	'automation.completed',
+	'automation.failed',
+	'automation.triggered',
 	'delivery.delayed',
 	'delivery.failed',
 	'delivery.published',
+	'inbox.comment_received',
+	'inbox.mention_received',
+	'inbox.message_received',
+	'inbox.reply_sent',
+	'inbox.review_received',
+	'post.deleted',
 	'post.failed',
 	'post.partially_failed',
 	'post.published',
+	'post.scheduled',
 ] as const;
 
 const SIGNATURE_HEADER = 'x-fopost-signature';
@@ -84,14 +97,44 @@ export class FoPostTrigger implements INodeType {
 				default: ['post.published'],
 				options: [
 					{
+						name: 'Account Connected',
+						value: 'account.connected',
+						description: 'A social account was connected',
+					},
+					{
+						name: 'Account Disconnected',
+						value: 'account.disconnected',
+						description: 'A social account was disconnected',
+					},
+					{
 						name: 'Account Health Changed',
 						value: 'account.health_changed',
-						description: 'A connected account changed connection health, including disconnects',
+						description: 'A connected account changed connection health',
+					},
+					{
+						name: 'Article Published',
+						value: 'article.published',
+						description: 'A blog article was published, with its full body',
+					},
+					{
+						name: 'Automation Completed',
+						value: 'automation.completed',
+						description: 'An automation run finished',
+					},
+					{
+						name: 'Automation Failed',
+						value: 'automation.failed',
+						description: 'An automation run failed',
+					},
+					{
+						name: 'Automation Triggered',
+						value: 'automation.triggered',
+						description: 'An automation run started',
 					},
 					{
 						name: 'Delivery Delayed',
 						value: 'delivery.delayed',
-						description: 'A single account delivery was pushed back',
+						description: 'A single account delivery was held by a platform rate limit',
 					},
 					{
 						name: 'Delivery Failed',
@@ -102,6 +145,36 @@ export class FoPostTrigger implements INodeType {
 						name: 'Delivery Published',
 						value: 'delivery.published',
 						description: 'A single account delivery went live',
+					},
+					{
+						name: 'Inbox Comment Received',
+						value: 'inbox.comment_received',
+						description: 'A new comment on one of your posts',
+					},
+					{
+						name: 'Inbox Mention Received',
+						value: 'inbox.mention_received',
+						description: 'A new mention of one of your accounts',
+					},
+					{
+						name: 'Inbox Message Received',
+						value: 'inbox.message_received',
+						description: 'A new direct message',
+					},
+					{
+						name: 'Inbox Reply Sent',
+						value: 'inbox.reply_sent',
+						description: 'A reply sent from the inbox reached the platform',
+					},
+					{
+						name: 'Inbox Review Received',
+						value: 'inbox.review_received',
+						description: 'A new review or recommendation',
+					},
+					{
+						name: 'Post Deleted',
+						value: 'post.deleted',
+						description: 'A post was deleted, cancelling pending deliveries',
 					},
 					{
 						name: 'Post Failed',
@@ -117,6 +190,11 @@ export class FoPostTrigger implements INodeType {
 						name: 'Post Published',
 						value: 'post.published',
 						description: 'A post went live on every target account',
+					},
+					{
+						name: 'Post Scheduled',
+						value: 'post.scheduled',
+						description: 'A post was put on the calendar',
 					},
 				],
 				description: 'The FoPost events that start this workflow',
