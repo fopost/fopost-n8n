@@ -1,0 +1,241 @@
+{
+  "name": "Send a weekly social media report from FoPost to Slack",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Send a weekly social media report to Slack\n\n### How it works\nEvery Monday at 9:00 the workflow pulls the last seven days from FoPost analytics: posts published, impressions, engagement, follower change against the week before, and your three best posts with links. It formats them into one short Slack message for your team.\n\nMade for marketing teams and agencies who want a weekly pulse without opening a dashboard.\n\n### Setup\n1. Install the **FoPost** community node: Settings → Community Nodes → Install → `n8n-nodes-fopost` (tested with 0.2.0). Docs: https://github.com/fopost/fopost-n8n\n2. Create a FoPost API key with the `analytics` scope at fopost.com → Settings → API Keys and add it as a **FoPost API** credential.\n3. Add a **Slack** credential.\n4. Open **Configure** and set your FoPost workspace ID and Slack channel.\n\n### Customization\nChange the day and time in **Every Monday at 9:00**, set **Days** on both FoPost nodes for a monthly report, or swap the Slack node for Gmail or Microsoft Teams.\n\n### Limitations\nNumbers are what the networks report to FoPost; some networks report impressions a day or two late, so the latest days may still grow.",
+        "height": 700,
+        "width": 520
+      },
+      "id": "0e7bcdde-26bd-5ef0-9b39-79e81516cc75",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -680,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Pull last week\nTotals and the top three posts for the same seven days.",
+        "height": 340,
+        "width": 940,
+        "color": 7
+      },
+      "id": "16eba27e-8c34-5d8f-a279-3f659e31afd4",
+      "name": "Section: data",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Write and send\nOne message, numbers with the change against the week before.",
+        "height": 340,
+        "width": 460,
+        "color": 7
+      },
+      "id": "ea132097-9def-54a7-8219-15a257aeed56",
+      "name": "Section: report",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        920,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "d6e071e9-474c-5379-80cc-c76c8efbd25a",
+      "name": "Every Monday at 9:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6b27d52e-136b-5853-8d13-216956880e55",
+              "name": "workspaceId",
+              "value": "REPLACE_WITH_FOPOST_WORKSPACE_ID",
+              "type": "string"
+            },
+            {
+              "id": "038261ec-8e8b-56f1-9d3c-b37644825d34",
+              "name": "slackChannel",
+              "value": "#marketing",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "f9661826-cdb3-57dd-b130-e91054a02f1a",
+      "name": "Configure",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "analytics",
+        "operation": "getOverview",
+        "workspaceId": "={{ $('Configure').first().json.workspaceId }}",
+        "days": 7,
+        "options": {}
+      },
+      "id": "b5ad085c-e7d3-5736-b18a-11fedd15d7e9",
+      "name": "Get weekly totals",
+      "type": "n8n-nodes-fopost.foPost",
+      "typeVersion": 1,
+      "position": [
+        460,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "analytics",
+        "operation": "getTopPosts",
+        "workspaceId": "={{ $('Configure').first().json.workspaceId }}",
+        "days": 7,
+        "limit": 3,
+        "options": {}
+      },
+      "id": "a3ef9520-61e9-5595-8526-5ef20a1747ac",
+      "name": "Get top 3 posts",
+      "type": "n8n-nodes-fopost.foPost",
+      "typeVersion": 1,
+      "position": [
+        700,
+        40
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const totals = $('Get weekly totals').first().json;\nconst top = $('Get top 3 posts').all().map((item) => item.json);\n\nconst n = (value) => Number(value ?? 0).toLocaleString('en-US');\nconst delta = (pct) =>\n  pct === null || pct === undefined ? '' : ` (${pct >= 0 ? '+' : ''}${Number(pct).toFixed(1)}%)`;\nconst d = totals.deltas ?? {};\n\nconst lines = [\n  '*Social media, last 7 days*',\n  `Posts published: ${n(totals.total_posts)}${delta(d.posts)}`,\n  `Impressions: ${n(totals.total_impressions)}${delta(d.impressions)}`,\n  `Engagement: ${n(totals.total_engagement)}${delta(d.engagement)}`,\n  `Followers: ${n(totals.total_followers)}${delta(d.followers)}`,\n];\n\nif (top.length > 0) {\n  lines.push('', '*Top posts*');\n  for (const post of top) {\n    const label = (post.preview || 'Untitled post').slice(0, 80);\n    const link = post.permalink ? `<${post.permalink}|${label}>` : label;\n    lines.push(`${post.rank}. ${link} · ${n(post.metrics?.engagements)} engagements`);\n  }\n}\n\nreturn [{ json: { text: lines.join('\\n') } }];\n"
+      },
+      "id": "660e5494-1f60-5f6a-ad5c-2631841fbe5b",
+      "name": "Write the report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $('Configure').first().json.slackChannel }}",
+          "mode": "name"
+        },
+        "text": "={{ $json.text }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "b3e41a54-b738-5959-9fd2-ac327b00f858",
+      "name": "Send to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        1200,
+        40
+      ],
+      "webhookId": "804fac38-3350-536f-aa46-c8d4335ce5ba"
+    }
+  ],
+  "connections": {
+    "Every Monday at 9:00": {
+      "main": [
+        [
+          {
+            "node": "Configure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure": {
+      "main": [
+        [
+          {
+            "node": "Get weekly totals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get weekly totals": {
+      "main": [
+        [
+          {
+            "node": "Get top 3 posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get top 3 posts": {
+      "main": [
+        [
+          {
+            "node": "Write the report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write the report": {
+      "main": [
+        [
+          {
+            "node": "Send to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

@@ -36,6 +36,7 @@
     "format": "prettier credentials nodes test --write",
     "format:check": "prettier credentials nodes test --check",
     "test": "jest",
+    "validate:templates": "node scripts/validate-templates.mjs",
     "prepublishOnly": "node -e \"if(!process.env.GITHUB_ACTIONS){console.error('Publish from the release workflow so npm records provenance.');process.exit(1)}\" && npm run lint && npm run build"
   },
   "files": [

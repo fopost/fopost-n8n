@@ -1,0 +1,206 @@
+{
+  "name": "Share every new blog post on all your social accounts with FoPost",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Share every new blog post on all your social accounts\n\n### How it works\nThe RSS trigger checks your blog feed every hour. For each new article, the workflow reads the active social accounts in your FoPost workspace and writes one short post with the title, a one-line summary, the link and your hashtags. FoPost places it in the next free slot of your posting schedule, so a batch of new articles goes out spaced across the day instead of all at once.\n\nMade for content teams, newsletters and agencies that publish often and want every article shared everywhere without copy-pasting.\n\n### Setup\n1. Install the **FoPost** community node: Settings → Community Nodes → Install → `n8n-nodes-fopost` (tested with 0.2.0). Docs: https://github.com/fopost/fopost-n8n\n2. Create a FoPost API key at fopost.com → Settings → API Keys and add it as a **FoPost API** credential.\n3. In FoPost, add posting slots under Settings → Posting Schedule. Queued posts need them.\n4. Paste your feed URL into **New blog post**.\n5. Open **Configure** and set your FoPost workspace ID and hashtags.\n\n### Customization\nChange **Write the post** to use the full summary on LinkedIn, or filter accounts by `platform` there to post on some networks only.\n\n### Limitations\nOnly articles published after the workflow is activated are shared. Each post stays under 280 characters so it fits every network.",
+        "height": 720,
+        "width": 520
+      },
+      "id": "0c7b0200-c2c8-509d-b590-89e4bc3a420d",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -680,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Watch the feed\nOnly articles the trigger has not seen before start a run.",
+        "height": 340,
+        "width": 460,
+        "color": 7
+      },
+      "id": "ee2c6061-4ff4-5c06-a35d-006bb8ec987f",
+      "name": "Section: feed",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Queue one post per article\nAll active accounts in the workspace, next free slot in the posting schedule.",
+        "height": 340,
+        "width": 940,
+        "color": 7
+      },
+      "id": "9b941cd7-b8fa-572c-89e6-a97ac28204dd",
+      "name": "Section: post",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        440,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyHour"
+            }
+          ]
+        },
+        "feedUrl": "https://yourbrand.com/blog/rss.xml"
+      },
+      "id": "7cdbbcbc-3084-53a4-b953-92f10e0801d6",
+      "name": "New blog post",
+      "type": "n8n-nodes-base.rssFeedReadTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6b27d52e-136b-5853-8d13-216956880e55",
+              "name": "workspaceId",
+              "value": "REPLACE_WITH_FOPOST_WORKSPACE_ID",
+              "type": "string"
+            },
+            {
+              "id": "ed72d177-1730-5f31-b4a8-45bdaed5b63b",
+              "name": "hashtags",
+              "value": "#blog #marketing",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "82e9e512-77a7-5813-98bb-74e7e53cea5a",
+      "name": "Configure",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "account",
+        "operation": "getAll",
+        "workspaceId": "={{ $('Configure').first().json.workspaceId }}",
+        "returnAll": true
+      },
+      "id": "8467189f-8c32-50d1-aec7-605abc4008df",
+      "name": "Get connected accounts",
+      "type": "n8n-nodes-fopost.foPost",
+      "typeVersion": 1,
+      "position": [
+        480,
+        40
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const cfg = $('Configure').first().json;\nconst accounts = $('Get connected accounts')\n  .all()\n  .map((item) => item.json)\n  .filter((account) => account.active !== false)\n  .map((account) => account.id);\n\nif (accounts.length === 0) {\n  throw new Error('No active accounts in this FoPost workspace');\n}\n\n// Keep every post under 280 characters so it fits on every network.\nreturn $('New blog post').all().map((article) => {\n  const { title, link } = article.json;\n  const tail = `\\n\\n${link}\\n${cfg.hashtags}`.trimEnd();\n  const room = 280 - title.length - tail.length - 2;\n  const summary = (article.json.contentSnippet || '').replace(/\\s+/g, ' ').trim();\n  const line = summary.length > room ? `${summary.slice(0, Math.max(room - 1, 0))}…` : summary;\n  const text = room > 20 && line ? `${title}\\n\\n${line}${tail}` : `${title}${tail}`;\n  return { json: { workspaceId: cfg.workspaceId, accounts, text, title } };\n});\n"
+      },
+      "id": "bbb66786-e68c-5078-a09d-432e80202e08",
+      "name": "Write the post",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "post",
+        "operation": "create",
+        "workspaceId": "={{ $json.workspaceId }}",
+        "accounts": "={{ $json.accounts }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "addToQueue": true,
+          "internal_title": "={{ $json.title }}"
+        }
+      },
+      "id": "a34e9605-5ffe-5ce7-94f8-d3b57a275841",
+      "name": "Add to FoPost queue",
+      "type": "n8n-nodes-fopost.foPost",
+      "typeVersion": 1,
+      "position": [
+        960,
+        40
+      ]
+    }
+  ],
+  "connections": {
+    "New blog post": {
+      "main": [
+        [
+          {
+            "node": "Configure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure": {
+      "main": [
+        [
+          {
+            "node": "Get connected accounts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get connected accounts": {
+      "main": [
+        [
+          {
+            "node": "Write the post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write the post": {
+      "main": [
+        [
+          {
+            "node": "Add to FoPost queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
