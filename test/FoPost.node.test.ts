@@ -281,12 +281,35 @@ describe('loadOptions', () => {
 	it('scopes accounts to the selected workspace', async () => {
 		nock(TEST_BASE_URL)
 			.get('/v1/accounts')
-			.query({ workspaceId: 'ws-1' })
+			.query({ workspace_id: 'ws-1' })
 			.reply(200, { data: [{ id: 'acc-1', displayName: 'Brand on X' }] });
 
 		const context = createExecuteFunctions({ params: { workspaceId: 'ws-1' } });
 		const options = await new FoPost().methods.loadOptions.getAccounts.call(context);
 
 		expect(options).toEqual([{ name: 'Brand on X', value: 'acc-1' }]);
+	});
+});
+
+describe('analytics', () => {
+	it('sends the account filter as account_id', async () => {
+		nock(TEST_BASE_URL)
+			.get('/v1/analytics/overview')
+			.query({ days: '7', workspace_id: 'ws-1', account_id: 'acc-1' })
+			.reply(200, { data: { total_posts: 4 } });
+
+		const context = createExecuteFunctions({
+			params: {
+				resource: 'analytics',
+				operation: 'getOverview',
+				workspaceId: 'ws-1',
+				days: 7,
+				options: { accountId: 'acc-1' },
+			},
+		});
+		const [items] = await new FoPost().execute.call(context);
+
+		expect(items[0].json.total_posts).toBe(4);
+		expect(nock.isDone()).toBe(true);
 	});
 });

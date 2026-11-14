@@ -119,7 +119,7 @@ export class FoPost implements INodeType {
 						'GET',
 						'/accounts',
 						{},
-						workspaceId ? { workspaceId } : {},
+						workspaceId ? { workspace_id: workspaceId } : {},
 					),
 				) ?? []) as IDataObject[];
 				return toOptions(accounts, ['displayName', 'username', 'name']);
@@ -505,11 +505,14 @@ async function executeAnalytics(
 	operation: string,
 	i: number,
 ): Promise<FoPostResponse> {
-	const options = stripEmpty(this.getNodeParameter('options', i, {}) as IDataObject);
+	const { accountId, ...range } = stripEmpty(
+		this.getNodeParameter('options', i, {}) as IDataObject,
+	);
 	const qs: IDataObject = {
 		days: this.getNodeParameter('days', i, 30) as number,
 		workspace_id: this.getNodeParameter('workspaceId', i, '') as string,
-		...options,
+		account_id: accountId,
+		...range,
 	};
 
 	if (operation === 'getOverview') {
