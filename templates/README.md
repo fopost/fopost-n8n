@@ -15,12 +15,12 @@ instructions as sticky notes on the canvas, uses fictional sample values (`yourb
 
 ## Import one
 
-1. Install the community node: **Settings → Community Nodes → Install → `n8n-nodes-fopost`**.
+1. Install the community node: **Settings → Community Nodes → Install → `@fopost/n8n-nodes-fopost`**.
 2. In n8n, open a new workflow, then **⋯ → Import from File** (or paste the JSON onto the
    canvas).
 3. Follow the yellow note in the top-left corner of the canvas.
 
-Requires `n8n-nodes-fopost` 0.2.0 or later: the templates use the Inbox resource, the
+Requires `@fopost/n8n-nodes-fopost` 0.2.0 or later: the templates use the Inbox resource, the
 **Add to Queue** option and the inbox trigger events added in 0.2.0. Each one was imported
 and run end to end on n8n 2.47.7 against a stand-in for the FoPost API.
 

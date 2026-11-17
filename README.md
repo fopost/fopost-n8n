@@ -1,6 +1,6 @@
-# n8n-nodes-fopost
+# @fopost/n8n-nodes-fopost
 
-[![npm version](https://img.shields.io/npm/v/n8n-nodes-fopost.svg)](https://www.npmjs.com/package/n8n-nodes-fopost)
+[![npm version](https://img.shields.io/npm/v/@fopost/n8n-nodes-fopost.svg)](https://www.npmjs.com/package/@fopost/n8n-nodes-fopost)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Official [n8n](https://n8n.io) community node for [FoPost](https://fopost.com) — schedule and
@@ -20,13 +20,13 @@ Install through n8n's Community Nodes UI:
 
 1. Go to **Settings → Community Nodes**.
 2. Select **Install**.
-3. Enter `n8n-nodes-fopost` as the npm package name.
+3. Enter `@fopost/n8n-nodes-fopost` as the npm package name.
 4. Agree to the risks of using community nodes and select **Install**.
 
 For a self-hosted instance you can install it manually instead:
 
 ```bash
-npm install n8n-nodes-fopost
+npm install @fopost/n8n-nodes-fopost
 ```
 
 Follow n8n's [community node installation guide](https://docs.n8n.io/integrations/community-nodes/installation/)

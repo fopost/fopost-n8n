@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Send a weekly social media report to Slack\n\n### How it works\nEvery Monday at 9:00 the workflow pulls the last seven days from FoPost analytics: posts published, impressions, engagement, follower change against the week before, and your three best posts with links. It formats them into one short Slack message for your team.\n\nMade for marketing teams and agencies who want a weekly pulse without opening a dashboard.\n\n### Setup\n1. Install the **FoPost** community node: Settings → Community Nodes → Install → `n8n-nodes-fopost` (tested with 0.2.0). Docs: https://github.com/fopost/fopost-n8n\n2. Create a FoPost API key with the `analytics` scope at fopost.com → Settings → API Keys and add it as a **FoPost API** credential.\n3. Add a **Slack** credential.\n4. Open **Configure** and set your FoPost workspace ID and Slack channel.\n\n### Customization\nChange the day and time in **Every Monday at 9:00**, set **Days** on both FoPost nodes for a monthly report, or swap the Slack node for Gmail or Microsoft Teams.\n\n### Limitations\nNumbers are what the networks report to FoPost; some networks report impressions a day or two late, so the latest days may still grow.",
+        "content": "## Send a weekly social media report to Slack\n\n### How it works\nEvery Monday at 9:00 the workflow pulls the last seven days from FoPost analytics: posts published, impressions, engagement, follower change against the week before, and your three best posts with links. It formats them into one short Slack message for your team.\n\nMade for marketing teams and agencies who want a weekly pulse without opening a dashboard.\n\n### Setup\n1. Install the **FoPost** community node: Settings → Community Nodes → Install → `@fopost/n8n-nodes-fopost` (tested with 0.2.0). Docs: https://github.com/fopost/fopost-n8n\n2. Create a FoPost API key with the `analytics` scope at fopost.com → Settings → API Keys and add it as a **FoPost API** credential.\n3. Add a **Slack** credential.\n4. Open **Configure** and set your FoPost workspace ID and Slack channel.\n\n### Customization\nChange the day and time in **Every Monday at 9:00**, set **Days** on both FoPost nodes for a monthly report, or swap the Slack node for Gmail or Microsoft Teams.\n\n### Limitations\nNumbers are what the networks report to FoPost; some networks report impressions a day or two late, so the latest days may still grow.",
         "height": 700,
         "width": 520
       },
@@ -111,7 +111,7 @@
       },
       "id": "b5ad085c-e7d3-5736-b18a-11fedd15d7e9",
       "name": "Get weekly totals",
-      "type": "n8n-nodes-fopost.foPost",
+      "type": "@fopost/n8n-nodes-fopost.foPost",
       "typeVersion": 1,
       "position": [
         460,
@@ -129,7 +129,7 @@
       },
       "id": "a3ef9520-61e9-5595-8526-5ef20a1747ac",
       "name": "Get top 3 posts",
-      "type": "n8n-nodes-fopost.foPost",
+      "type": "@fopost/n8n-nodes-fopost.foPost",
       "typeVersion": 1,
       "position": [
         700,

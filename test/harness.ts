@@ -29,7 +29,7 @@ export interface HarnessOptions {
 export const testNode: INode = {
 	id: 'a1b2c3',
 	name: 'FoPost',
-	type: 'n8n-nodes-fopost.foPost',
+	type: '@fopost/n8n-nodes-fopost.foPost',
 	typeVersion: 1,
 	position: [0, 0],
 	parameters: {},

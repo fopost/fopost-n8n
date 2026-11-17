@@ -4,7 +4,7 @@ Guidance for Claude Code (claude.ai/code) when working in this repository.
 
 ## What This Is
 
-`n8n-nodes-fopost` — the official [n8n](https://n8n.io) community node package for FoPost,
+`@fopost/n8n-nodes-fopost` — the official [n8n](https://n8n.io) community node package for FoPost,
 published to npm. It ships one credential (`FoPost API`), one action node (`FoPost`) and one
 webhook trigger node (`FoPost Trigger`) that talk to the FoPost REST API at
 `https://api.fopost.com/v1`.
@@ -112,7 +112,7 @@ npm run format
 ```
 
 Lint, build and test all have to pass before a commit. `npm run lint` runs the same two
-plugins n8n's verification scanner (`npx @n8n/scan-community-package n8n-nodes-fopost`) runs:
+plugins n8n's verification scanner (`npx @n8n/scan-community-package @fopost/n8n-nodes-fopost`) runs:
 `eslint-plugin-n8n-nodes-base` and `@n8n/eslint-plugin-community-nodes`. Treat a lint error as
 a release blocker, not a style nit. The scanner itself only runs against a published version
 (it checks npm provenance first), so `npm run lint` is the pre-publish gate.

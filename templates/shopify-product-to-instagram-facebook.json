@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Post new Shopify products to Instagram and Facebook\n\n### How it works\nWhen you add a product in Shopify, this workflow checks that it is active and has a photo, then writes a launch post with the product name, price and link. FoPost posts the main product photo to your Instagram and Facebook accounts in the next free slot of your posting schedule.\n\nMade for shops that add products often and want every new arrival announced. It suits car dealers and property listings run on Shopify too.\n\n### Setup\n1. Install the **FoPost** community node: Settings → Community Nodes → Install → `n8n-nodes-fopost` (tested with 0.2.0). Docs: https://github.com/fopost/fopost-n8n\n2. Create a FoPost API key at fopost.com → Settings → API Keys and add it as a **FoPost API** credential.\n3. Add a **Shopify** credential (an Admin API access token with `read_products`).\n4. In FoPost, add posting slots under Settings → Posting Schedule.\n5. Open **Configure** and set your FoPost workspace ID, the Instagram and Facebook account IDs, your store URL and currency symbol.\n\n### Customization\nSwap **Add to FoPost queue** to Status → Scheduled with a Schedule At time, or add more account IDs to post on more networks.\n\n### Limitations\nDraft and archived products are skipped, as are products without an image, because Instagram needs one. Links in Instagram captions are not clickable, so the caption points to the bio.",
+        "content": "## Post new Shopify products to Instagram and Facebook\n\n### How it works\nWhen you add a product in Shopify, this workflow checks that it is active and has a photo, then writes a launch post with the product name, price and link. FoPost posts the main product photo to your Instagram and Facebook accounts in the next free slot of your posting schedule.\n\nMade for shops that add products often and want every new arrival announced. It suits car dealers and property listings run on Shopify too.\n\n### Setup\n1. Install the **FoPost** community node: Settings → Community Nodes → Install → `@fopost/n8n-nodes-fopost` (tested with 0.2.0). Docs: https://github.com/fopost/fopost-n8n\n2. Create a FoPost API key at fopost.com → Settings → API Keys and add it as a **FoPost API** credential.\n3. Add a **Shopify** credential (an Admin API access token with `read_products`).\n4. In FoPost, add posting slots under Settings → Posting Schedule.\n5. Open **Configure** and set your FoPost workspace ID, the Instagram and Facebook account IDs, your store URL and currency symbol.\n\n### Customization\nSwap **Add to FoPost queue** to Status → Scheduled with a Schedule At time, or add more account IDs to post on more networks.\n\n### Limitations\nDraft and archived products are skipped, as are products without an image, because Instagram needs one. Links in Instagram captions are not clickable, so the caption points to the bio.",
         "height": 740,
         "width": 520
       },
@@ -178,7 +178,7 @@
       },
       "id": "759a8167-76ec-51b7-8b66-b754e6f0da66",
       "name": "Add to FoPost queue",
-      "type": "n8n-nodes-fopost.foPost",
+      "type": "@fopost/n8n-nodes-fopost.foPost",
       "typeVersion": 1,
       "position": [
         720,
