@@ -8,7 +8,7 @@
       },
       "id": "6a2d1e4b-0000-4000-8000-000000000001",
       "name": "FoPost Trigger",
-      "type": "n8n-nodes-fopost.foPostTrigger",
+      "type": "@fopost/n8n-nodes-fopost.foPostTrigger",
       "typeVersion": 1,
       "position": [-260, 0],
       "webhookId": "6a2d1e4b-0000-4000-8000-0000000000ff",
@@ -27,7 +27,7 @@
       },
       "id": "6a2d1e4b-0000-4000-8000-000000000002",
       "name": "Get Deliveries",
-      "type": "n8n-nodes-fopost.foPost",
+      "type": "@fopost/n8n-nodes-fopost.foPost",
       "typeVersion": 1,
       "position": [-40, 0],
       "credentials": {

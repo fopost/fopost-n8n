@@ -1,5 +1,5 @@
 {
-  "name": "n8n-nodes-fopost",
+  "name": "@fopost/n8n-nodes-fopost",
   "version": "0.2.0",
   "description": "n8n community node for FoPost. Schedule and publish social media posts, work the social inbox, read analytics, and trigger workflows on publishing and inbox events.",
   "license": "MIT",

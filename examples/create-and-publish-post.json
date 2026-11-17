@@ -22,7 +22,7 @@
       },
       "id": "5f1c0f3a-0000-4000-8000-000000000002",
       "name": "Create Post",
-      "type": "n8n-nodes-fopost.foPost",
+      "type": "@fopost/n8n-nodes-fopost.foPost",
       "typeVersion": 1,
       "position": [-40, 0],
       "credentials": {
@@ -40,7 +40,7 @@
       },
       "id": "5f1c0f3a-0000-4000-8000-000000000003",
       "name": "Publish Post",
-      "type": "n8n-nodes-fopost.foPost",
+      "type": "@fopost/n8n-nodes-fopost.foPost",
       "typeVersion": 1,
       "position": [180, 0],
       "credentials": {

@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Turn GitHub releases into approved social posts\n\n### How it works\nWhen you publish a release on GitHub, this workflow writes a launch post for X, Bluesky and LinkedIn from the release notes, each sized for its network. It saves them as drafts in FoPost and asks your team in Slack to approve. On **Approve**, FoPost publishes all three drafts. On **Decline**, the drafts stay in FoPost so someone can edit them and publish by hand.\n\nMade for developer tools and open-source teams who want every release announced without writing three posts each time.\n\n### Setup\n1. Install the **FoPost** community node: Settings → Community Nodes → Install → `n8n-nodes-fopost` (tested with 0.2.0). Docs: https://github.com/fopost/fopost-n8n\n2. Create a FoPost API key at fopost.com → Settings → API Keys and add it as a **FoPost API** credential.\n3. Add a **GitHub** credential and choose your owner and repository in the trigger.\n4. Add a **Slack** credential.\n5. Open **Configure** and paste your FoPost workspace ID, the account ID for each network (FoPost → Accounts, or the FoPost node's Account → Get Many) and the Slack channel. Leave an account ID empty to skip that network.\n\n### Customization\nEdit the wording in **Write a draft per network**, or add a network by adding one more entry there and an account ID in **Configure**.\n\n### Limitations\nPre-releases and draft releases are skipped. The Slack approval waits up to 7 days.",
+        "content": "## Turn GitHub releases into approved social posts\n\n### How it works\nWhen you publish a release on GitHub, this workflow writes a launch post for X, Bluesky and LinkedIn from the release notes, each sized for its network. It saves them as drafts in FoPost and asks your team in Slack to approve. On **Approve**, FoPost publishes all three drafts. On **Decline**, the drafts stay in FoPost so someone can edit them and publish by hand.\n\nMade for developer tools and open-source teams who want every release announced without writing three posts each time.\n\n### Setup\n1. Install the **FoPost** community node: Settings → Community Nodes → Install → `@fopost/n8n-nodes-fopost` (tested with 0.2.0). Docs: https://github.com/fopost/fopost-n8n\n2. Create a FoPost API key at fopost.com → Settings → API Keys and add it as a **FoPost API** credential.\n3. Add a **GitHub** credential and choose your owner and repository in the trigger.\n4. Add a **Slack** credential.\n5. Open **Configure** and paste your FoPost workspace ID, the account ID for each network (FoPost → Accounts, or the FoPost node's Account → Get Many) and the Slack channel. Leave an account ID empty to skip that network.\n\n### Customization\nEdit the wording in **Write a draft per network**, or add a network by adding one more entry there and an account ID in **Configure**.\n\n### Limitations\nPre-releases and draft releases are skipped. The Slack approval waits up to 7 days.",
         "height": 760,
         "width": 520
       },
@@ -210,7 +210,7 @@
       },
       "id": "d8446db5-6a6b-5b86-87a2-ff26552c29a0",
       "name": "Save draft in FoPost",
-      "type": "n8n-nodes-fopost.foPost",
+      "type": "@fopost/n8n-nodes-fopost.foPost",
       "typeVersion": 1,
       "position": [
         960,
@@ -331,7 +331,7 @@
       },
       "id": "aaad3ca6-ff38-5401-9361-50a38d6cbf62",
       "name": "Publish in FoPost",
-      "type": "n8n-nodes-fopost.foPost",
+      "type": "@fopost/n8n-nodes-fopost.foPost",
       "typeVersion": 1,
       "position": [
         2080,

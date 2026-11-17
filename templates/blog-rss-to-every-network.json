@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Share every new blog post on all your social accounts\n\n### How it works\nThe RSS trigger checks your blog feed every hour. For each new article, the workflow reads the active social accounts in your FoPost workspace and writes one short post with the title, a one-line summary, the link and your hashtags. FoPost places it in the next free slot of your posting schedule, so a batch of new articles goes out spaced across the day instead of all at once.\n\nMade for content teams, newsletters and agencies that publish often and want every article shared everywhere without copy-pasting.\n\n### Setup\n1. Install the **FoPost** community node: Settings → Community Nodes → Install → `n8n-nodes-fopost` (tested with 0.2.0). Docs: https://github.com/fopost/fopost-n8n\n2. Create a FoPost API key at fopost.com → Settings → API Keys and add it as a **FoPost API** credential.\n3. In FoPost, add posting slots under Settings → Posting Schedule. Queued posts need them.\n4. Paste your feed URL into **New blog post**.\n5. Open **Configure** and set your FoPost workspace ID and hashtags.\n\n### Customization\nChange **Write the post** to use the full summary on LinkedIn, or filter accounts by `platform` there to post on some networks only.\n\n### Limitations\nOnly articles published after the workflow is activated are shared. Each post stays under 280 characters so it fits every network.",
+        "content": "## Share every new blog post on all your social accounts\n\n### How it works\nThe RSS trigger checks your blog feed every hour. For each new article, the workflow reads the active social accounts in your FoPost workspace and writes one short post with the title, a one-line summary, the link and your hashtags. FoPost places it in the next free slot of your posting schedule, so a batch of new articles goes out spaced across the day instead of all at once.\n\nMade for content teams, newsletters and agencies that publish often and want every article shared everywhere without copy-pasting.\n\n### Setup\n1. Install the **FoPost** community node: Settings → Community Nodes → Install → `@fopost/n8n-nodes-fopost` (tested with 0.2.0). Docs: https://github.com/fopost/fopost-n8n\n2. Create a FoPost API key at fopost.com → Settings → API Keys and add it as a **FoPost API** credential.\n3. In FoPost, add posting slots under Settings → Posting Schedule. Queued posts need them.\n4. Paste your feed URL into **New blog post**.\n5. Open **Configure** and set your FoPost workspace ID and hashtags.\n\n### Customization\nChange **Write the post** to use the full summary on LinkedIn, or filter accounts by `platform` there to post on some networks only.\n\n### Limitations\nOnly articles published after the workflow is activated are shared. Each post stays under 280 characters so it fits every network.",
         "height": 720,
         "width": 520
       },
@@ -107,7 +107,7 @@
       },
       "id": "8467189f-8c32-50d1-aec7-605abc4008df",
       "name": "Get connected accounts",
-      "type": "n8n-nodes-fopost.foPost",
+      "type": "@fopost/n8n-nodes-fopost.foPost",
       "typeVersion": 1,
       "position": [
         480,
@@ -142,7 +142,7 @@
       },
       "id": "a34e9605-5ffe-5ce7-94f8-d3b57a275841",
       "name": "Add to FoPost queue",
-      "type": "n8n-nodes-fopost.foPost",
+      "type": "@fopost/n8n-nodes-fopost.foPost",
       "typeVersion": 1,
       "position": [
         960,

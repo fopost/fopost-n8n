@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Get a Slack alert when someone mentions your brand\n\n### How it works\nFoPost watches the social accounts you connected. When someone mentions one of them, FoPost calls this workflow. The workflow loads the mention from the FoPost inbox and posts the author, network, text and a link to the original post in Slack, so the right person can answer while it is still fresh.\n\nMade for support and community teams who live in Slack.\n\n### Setup\n1. Install the **FoPost** community node: Settings → Community Nodes → Install → `n8n-nodes-fopost` (tested with 0.2.0). Docs: https://github.com/fopost/fopost-n8n\n2. Create a FoPost API key with the `inbox` and `webhooks` scopes at fopost.com → Settings → API Keys and add it as a **FoPost API** credential.\n3. Add a **Slack** credential.\n4. Pick your workspace in **New mention in FoPost** and set the Slack channel in **Configure**.\n5. Activate the workflow. FoPost registers the webhook on activation and removes it when you deactivate.\n\n### Customization\nAdd **Inbox Comment Received** or **Inbox Message Received** to the trigger events to alert on comments and direct messages too, and change the type filter in **Load the mention** to match.\n\n### Limitations\nMentions arrive as fast as each network reports them, from seconds to a few minutes.",
+        "content": "## Get a Slack alert when someone mentions your brand\n\n### How it works\nFoPost watches the social accounts you connected. When someone mentions one of them, FoPost calls this workflow. The workflow loads the mention from the FoPost inbox and posts the author, network, text and a link to the original post in Slack, so the right person can answer while it is still fresh.\n\nMade for support and community teams who live in Slack.\n\n### Setup\n1. Install the **FoPost** community node: Settings → Community Nodes → Install → `@fopost/n8n-nodes-fopost` (tested with 0.2.0). Docs: https://github.com/fopost/fopost-n8n\n2. Create a FoPost API key with the `inbox` and `webhooks` scopes at fopost.com → Settings → API Keys and add it as a **FoPost API** credential.\n3. Add a **Slack** credential.\n4. Pick your workspace in **New mention in FoPost** and set the Slack channel in **Configure**.\n5. Activate the workflow. FoPost registers the webhook on activation and removes it when you deactivate.\n\n### Customization\nAdd **Inbox Comment Received** or **Inbox Message Received** to the trigger events to alert on comments and direct messages too, and change the type filter in **Load the mention** to match.\n\n### Limitations\nMentions arrive as fast as each network reports them, from seconds to a few minutes.",
         "height": 700,
         "width": 520
       },
@@ -57,7 +57,7 @@
       },
       "id": "114781e0-42fd-547a-872b-200e4dea583a",
       "name": "New mention in FoPost",
-      "type": "n8n-nodes-fopost.foPostTrigger",
+      "type": "@fopost/n8n-nodes-fopost.foPostTrigger",
       "typeVersion": 1,
       "position": [
         0,
@@ -103,7 +103,7 @@
       },
       "id": "04d116f7-25d9-55df-a247-234177b81dcd",
       "name": "Load the mention",
-      "type": "n8n-nodes-fopost.foPost",
+      "type": "@fopost/n8n-nodes-fopost.foPost",
       "typeVersion": 1,
       "position": [
         460,

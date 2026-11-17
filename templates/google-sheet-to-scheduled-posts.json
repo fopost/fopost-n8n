@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Schedule social posts from a Google Sheet\n\n### How it works\nPlan posts in a spreadsheet and let FoPost publish them. Each new row with text and a future **Publish At** time becomes a scheduled post on the accounts you pick, with the photo from **Image URL** when there is one. Rows without text or with a past time are skipped.\n\nMade for teams that plan content in a shared sheet: a real estate office adding new listings, a car dealer adding new arrivals, or a salon sharing its latest work.\n\n### Setup\n1. Install the **FoPost** community node: Settings → Community Nodes → Install → `n8n-nodes-fopost` (tested with 0.2.0). Docs: https://github.com/fopost/fopost-n8n\n2. Create a FoPost API key at fopost.com → Settings → API Keys and add it as a **FoPost API** credential.\n3. Create a sheet with the columns `Text`, `Image URL` and `Publish At` (format `2026-12-01 09:30`). Example row: `Just listed: 3-bed townhouse on Maple Street, open house Saturday` · `https://yourbrand.com/photos/maple.jpg` · `2026-12-05 10:00`.\n4. Add a **Google Sheets Trigger** credential and pick the sheet in **New row in content sheet**.\n5. Open **Configure** and set your FoPost workspace ID, the account IDs (comma-separated) and the time zone your sheet uses.\n\n### Customization\nAdd an `Accounts` column and use it instead of the fixed list in **Configure**.\n\n### Limitations\nOnly rows added after activation are picked up; edits to a row do not change its post.",
+        "content": "## Schedule social posts from a Google Sheet\n\n### How it works\nPlan posts in a spreadsheet and let FoPost publish them. Each new row with text and a future **Publish At** time becomes a scheduled post on the accounts you pick, with the photo from **Image URL** when there is one. Rows without text or with a past time are skipped.\n\nMade for teams that plan content in a shared sheet: a real estate office adding new listings, a car dealer adding new arrivals, or a salon sharing its latest work.\n\n### Setup\n1. Install the **FoPost** community node: Settings → Community Nodes → Install → `@fopost/n8n-nodes-fopost` (tested with 0.2.0). Docs: https://github.com/fopost/fopost-n8n\n2. Create a FoPost API key at fopost.com → Settings → API Keys and add it as a **FoPost API** credential.\n3. Create a sheet with the columns `Text`, `Image URL` and `Publish At` (format `2026-12-01 09:30`). Example row: `Just listed: 3-bed townhouse on Maple Street, open house Saturday` · `https://yourbrand.com/photos/maple.jpg` · `2026-12-05 10:00`.\n4. Add a **Google Sheets Trigger** credential and pick the sheet in **New row in content sheet**.\n5. Open **Configure** and set your FoPost workspace ID, the account IDs (comma-separated) and the time zone your sheet uses.\n\n### Customization\nAdd an `Accounts` column and use it instead of the fixed list in **Configure**.\n\n### Limitations\nOnly rows added after activation are picked up; edits to a row do not change its post.",
         "height": 760,
         "width": 520
       },
@@ -182,7 +182,7 @@
       },
       "id": "a63a2f88-0836-56c8-992c-c61a51ad9403",
       "name": "Schedule in FoPost",
-      "type": "n8n-nodes-fopost.foPost",
+      "type": "@fopost/n8n-nodes-fopost.foPost",
       "typeVersion": 1,
       "position": [
         720,
